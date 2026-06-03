@@ -1,5 +1,19 @@
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { GripVertical, ImageIcon, Move, Plus, Search, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  GripVertical,
+  Plus,
+  Save,
+  Search,
+  SquarePen,
+  Undo2,
+  Redo2,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 
 import { AdminShell } from "../components/AdminShell";
 import { Badge, Btn, Card, Field, inputCls } from "../components/ui";
@@ -53,271 +67,89 @@ function updateImageAt(
   };
 }
 
-function TemplatePreview({
-  template,
+function fieldCls(dark = false) {
+  if (!dark) return inputCls;
+  return "w-full rounded-md border border-[#3a3a3d] bg-[#141416] px-3 py-2 text-[12px] text-white placeholder:text-[#6e6f76] focus:outline-none focus:ring-2 focus:ring-[#d16d41]/30 focus:border-[#d16d41]";
+}
+
+function ThumbnailRail({
+  images,
   activeImageId,
+  onSelect,
+  onCreate,
+  onDelete,
 }: {
-  template: Pick<OfficialProductSetTemplate, "name" | "images">;
+  images: ProductSetMockupImage[];
   activeImageId: string;
+  onSelect: (imageId: string) => void;
+  onCreate: () => void;
+  onDelete: (imageId: string) => void;
 }) {
-  const activeImage = template.images.find((image) => image.id === activeImageId) ?? template.images[0];
-
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="relative flex h-[320px] bg-muted/25">
-        <div className="scrollbar-none flex w-[100px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-border/50 p-2">
-          {template.images.length > 0 ? (
-            template.images.map((image) => (
-              <div
-                key={image.id}
-                className={`overflow-hidden rounded-md border bg-background ${
-                  activeImage?.id === image.id ? "border-primary" : "border-border/60"
-                }`}
-              >
-                <img src={image.imageUrl} alt={image.name} className="aspect-[3/4] w-full object-cover" />
-                <div className="truncate border-t border-border/60 px-2 py-1 text-[11px] text-foreground">
-                  {image.name}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="flex h-full min-h-[120px] items-center justify-center rounded-md border border-dashed border-border text-[11px] text-muted-foreground">
-              暂无商品图
-            </div>
-          )}
-        </div>
-        <div className="relative flex flex-1 items-center justify-center p-3">
-          {activeImage ? (
-            <>
-              <img src={activeImage.imageUrl} alt={activeImage.name} className="max-h-full max-w-full object-contain" />
-              <div className="pointer-events-none absolute inset-3">
-                {activeImage.placements.map((placement) => (
-                  <div
-                    key={placement.id}
-                    className="absolute rounded-md border-2 border-primary/90 bg-primary/10"
-                    style={{
-                      left: `${placement.left}%`,
-                      top: `${placement.top}%`,
-                      width: `${placement.width}%`,
-                      height: `${placement.height}%`,
-                      transform: `rotate(${placement.angle ?? 0}deg)`,
-                    }}
-                  >
-                    <div className="absolute -top-6 left-0 rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-white">
-                      {placement.name}
+    <div className="flex h-full flex-col bg-[#252628]">
+      <div className="border-b border-[#37383c] px-3 py-3">
+        <div className="text-[11px] font-semibold tracking-[0.06em] text-white/90">商品套图缩略图</div>
+      </div>
+      <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+        {images.map((image, index) => {
+          const active = image.id === activeImageId;
+          return (
+            <div
+              key={image.id}
+              className={`group rounded-xl border p-2 text-left transition ${
+                active
+                  ? "border-[#d16d41] bg-[#3a312d] shadow-[0_0_0_1px_rgba(209,109,65,0.25)]"
+                  : "border-[#3b3c40] bg-[#2d2f33] hover:border-[#5a5c62]"
+              }`}
+            >
+              <button type="button" onClick={() => onSelect(image.id)} className="block w-full">
+                <div className="overflow-hidden rounded-lg bg-[#1d1e20]">
+                  {image.imageUrl ? (
+                    <img src={image.imageUrl} alt={image.name} className="aspect-[4/5] w-full object-cover" />
+                  ) : (
+                    <div className="flex aspect-[4/5] items-center justify-center text-[11px] text-[#8d8f97]">
+                      暂无图片
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
+              </button>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded bg-white text-[10px] font-semibold text-[#1e1f22]">
+                  {index + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-white/92">{image.name || `轮播图${index + 1}`}</span>
+                {images.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(image.id)}
+                    className="rounded p-1 text-[#9fa2ab] opacity-0 transition hover:bg-[#ffffff10] hover:text-white group-hover:opacity-100"
+                    aria-label={`删除${image.name || `轮播图${index + 1}`}`}
+                  >
+                    <X size={12} />
+                  </button>
+                ) : null}
               </div>
-            </>
-          ) : (
-            <div className="flex h-[220px] w-full items-center justify-center rounded-xl border border-dashed border-border bg-background text-[12px] text-muted-foreground">
-              未配置图片
             </div>
-          )}
-        </div>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex aspect-[4/5] w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#595b61] bg-[#34363a] text-[#d4d5da] transition hover:border-[#d16d41] hover:text-white"
+        >
+          <Plus size={20} />
+          <span className="mt-2 text-[11px]">添加轮播图</span>
+        </button>
       </div>
-      <div className="flex items-center gap-2 border-t border-border/60 px-3 py-2.5">
-        <span className="shrink-0 rounded border border-primary/40 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
-          官方
-        </span>
-        <span className="truncate text-[13px] font-medium text-foreground">
-          {template.name || "未命名模板"}
-        </span>
+      <div className="border-t border-[#37383c] px-3 py-3">
+        <div className="rounded bg-[#3a3b40] px-2 py-1 text-right text-[10px] text-[#81838b]">{images.length}/20</div>
       </div>
     </div>
   );
 }
 
-function ImageItem({
-  index,
-  image,
-  active,
-  onSelect,
-  onChange,
-  onUpload,
-  onDelete,
-}: {
-  index: number;
-  image: ProductSetMockupImage;
-  active: boolean;
-  onSelect: () => void;
-  onChange: (next: ProductSetMockupImage) => void;
-  onUpload: (file?: File) => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div
-      className={`rounded-xl border bg-card p-3 ${active ? "border-primary shadow-sm" : "border-border"}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <button type="button" onClick={onSelect} className="flex items-center gap-2 text-left">
-          <GripVertical size={14} className="text-muted-foreground" />
-          <span className="text-[12px] font-medium text-foreground">套图图片 {index + 1}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="inline-flex items-center gap-1 text-[12px] text-destructive"
-        >
-          <Trash2 size={13} /> 删除
-        </button>
-      </div>
-
-      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_132px]">
-        <div className="space-y-3">
-          <Field label="图片名称">
-            <input
-              className={inputCls}
-              value={image.name}
-              onChange={(event) => onChange({ ...image, name: event.target.value })}
-            />
-          </Field>
-          <Field label="图片 URL">
-            <input
-              className={inputCls}
-              value={image.imageUrl}
-              onChange={(event) => onChange({ ...image, imageUrl: event.target.value })}
-              placeholder="https://... 或上传本地图片"
-            />
-          </Field>
-          <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-[12px] text-foreground hover:border-primary/50">
-            <ImageIcon size={13} className="text-primary" />
-            上传本地图片
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                onUpload(event.target.files?.[0]);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSelect}
-          className="overflow-hidden rounded-lg border border-border bg-muted/30"
-        >
-          {image.imageUrl ? (
-            <img src={image.imageUrl} alt={image.name} className="h-[160px] w-full object-cover" />
-          ) : (
-            <div className="flex h-[160px] items-center justify-center text-[11px] text-muted-foreground">
-              预览
-            </div>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PlacementList({
-  placements,
-  selectedPlacementId,
-  onSelect,
-  onChange,
-  onDelete,
-}: {
-  placements: ProductSetPlacement[];
-  selectedPlacementId: string;
-  onSelect: (placementId: string) => void;
-  onChange: (placementId: string, next: ProductSetPlacement) => void;
-  onDelete: (placementId: string) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      {placements.length > 0 ? (
-        placements.map((placement, index) => (
-          <div
-            key={placement.id}
-            className={`rounded-xl border bg-card p-3 ${
-              selectedPlacementId === placement.id ? "border-primary shadow-sm" : "border-border"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => onSelect(placement.id)}
-                className="text-[12px] font-medium text-foreground"
-              >
-                区域 {index + 1}
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(placement.id)}
-                className="inline-flex items-center gap-1 text-[12px] text-destructive"
-              >
-                <Trash2 size={13} /> 删除
-              </button>
-            </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <Field label="区域名称">
-                <input
-                  className={inputCls}
-                  value={placement.name}
-                  onChange={(event) => onChange(placement.id, { ...placement, name: event.target.value })}
-                />
-              </Field>
-              <Field label="区域 ID">
-                <input
-                  className={inputCls}
-                  value={placement.id}
-                  onChange={(event) => onChange(placement.id, { ...placement, id: event.target.value })}
-                />
-              </Field>
-              <Field label="左侧位置（%）">
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={placement.left}
-                  onChange={(event) =>
-                    onChange(placement.id, { ...placement, left: clamp(Number(event.target.value) || 0, 0, 100) })
-                  }
-                />
-              </Field>
-              <Field label="顶部位置（%）">
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={placement.top}
-                  onChange={(event) =>
-                    onChange(placement.id, { ...placement, top: clamp(Number(event.target.value) || 0, 0, 100) })
-                  }
-                />
-              </Field>
-              <Field label="区域宽度（%）">
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={placement.width}
-                  onChange={(event) =>
-                    onChange(placement.id, { ...placement, width: clamp(Number(event.target.value) || 0, 0, 100) })
-                  }
-                />
-              </Field>
-              <Field label="区域高度（%）">
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={placement.height}
-                  onChange={(event) =>
-                    onChange(placement.id, { ...placement, height: clamp(Number(event.target.value) || 0, 0, 100) })
-                  }
-                />
-              </Field>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-[12px] text-muted-foreground">
-          当前图片还没有配置区域。点击“新增区域”后，直接在左侧画布拖出套取区域。
-        </div>
-      )}
-    </div>
-  );
+function CornerHandle({ className }: { className: string }) {
+  return <span className={`absolute h-2.5 w-2.5 rounded-full border border-[#ffb497] bg-white ${className}`} />;
 }
 
 type DragState =
@@ -331,7 +163,7 @@ type DragState =
       height: number;
     };
 
-function PlacementCanvas({
+function PlacementEditorCanvas({
   image,
   selectedPlacementId,
   onSelectPlacement,
@@ -358,19 +190,15 @@ function PlacementCanvas({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-xl border border-border bg-card p-3">
-        <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-foreground">
-          <Move size={14} className="text-primary" />
-          拖拽配置套取区域
-        </div>
-        <p className="mb-3 text-[11px] leading-5 text-muted-foreground">
-          先选中左侧某张套图图片，再在画布里拖出区域；拖动已有区域可以调整位置，右侧数值会实时同步。
-        </p>
-
+    <div className="flex h-full flex-col bg-black">
+      <div className="flex items-center justify-between border-b border-[#2b2b2f] px-5 py-3">
+        <div className="text-[12px] text-[#d7d7db]">{image?.name || "未选择图片"}</div>
+        <div className="text-[11px] text-[#757780]">拖拽空白区域创建印花位，拖动框体调整位置</div>
+      </div>
+      <div className="flex flex-1 items-center justify-center overflow-hidden p-6">
         <div
           ref={canvasRef}
-          className="relative aspect-[4/5] overflow-hidden rounded-xl border border-border bg-muted/30"
+          className="relative flex h-full max-h-[760px] w-full max-w-[920px] items-center justify-center overflow-hidden"
           onPointerDown={(event) => {
             if (!image) return;
             const point = toPercent(event.clientX, event.clientY);
@@ -396,7 +224,7 @@ function PlacementCanvas({
             setDrag({ type: "create", startX: point.x, startY: point.y });
             setDraftRect({
               id: placementId,
-              name: `区域 ${placements.length + 1}`,
+              name: `印花位 ${placements.length + 1}`,
               left: point.x,
               top: point.y,
               width: 0,
@@ -430,9 +258,7 @@ function PlacementCanvas({
             const nextTop = clamp(point.y - drag.offsetY, 0, 100 - drag.height);
             onChangePlacements(
               placements.map((placement) =>
-                placement.id === drag.placementId
-                  ? { ...placement, left: nextLeft, top: nextTop }
-                  : placement,
+                placement.id === drag.placementId ? { ...placement, left: nextLeft, top: nextTop } : placement,
               ),
             );
           }}
@@ -452,43 +278,48 @@ function PlacementCanvas({
           }}
         >
           {image?.imageUrl ? (
-            <img src={image.imageUrl} alt={image.name} className="h-full w-full object-contain" />
+            <img src={image.imageUrl} alt={image.name} className="max-h-full max-w-full object-contain shadow-2xl" />
           ) : (
-            <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">
-              先上传或填写当前套图图片
+            <div className="flex aspect-[4/5] w-full max-w-[500px] items-center justify-center rounded-2xl border border-dashed border-[#414247] bg-[#111214] text-[13px] text-[#7b7d86]">
+              先上传当前套图图片
             </div>
           )}
 
           <div className="pointer-events-none absolute inset-0">
-            {placements.map((placement) => (
-              <div
-                key={placement.id}
-                data-placement-id={placement.id}
-                className={`pointer-events-auto absolute rounded-md border-2 ${
-                  placement.id === selectedPlacementId
-                    ? "border-primary bg-primary/15"
-                    : "border-primary/70 bg-primary/8"
-                }`}
-                style={{
-                  left: `${placement.left}%`,
-                  top: `${placement.top}%`,
-                  width: `${placement.width}%`,
-                  height: `${placement.height}%`,
-                  transform: `rotate(${placement.angle ?? 0}deg)`,
-                }}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                }}
-              >
-                <div className="absolute -top-6 left-0 rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-white">
-                  {placement.name}
+            {placements.map((placement) => {
+              const active = placement.id === selectedPlacementId;
+              return (
+                <div
+                  key={placement.id}
+                  data-placement-id={placement.id}
+                  className={`pointer-events-auto absolute border-2 ${
+                    active ? "border-[#ff9d73] bg-[#ff8b5f14]" : "border-[#ffc1a6] bg-[#ffffff08]"
+                  }`}
+                  style={{
+                    left: `${placement.left}%`,
+                    top: `${placement.top}%`,
+                    width: `${placement.width}%`,
+                    height: `${placement.height}%`,
+                    transform: `rotate(${placement.angle ?? 0}deg)`,
+                  }}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  <CornerHandle className="-left-1.5 -top-1.5" />
+                  <CornerHandle className="-right-1.5 -top-1.5" />
+                  <CornerHandle className="-left-1.5 -bottom-1.5" />
+                  <CornerHandle className="-right-1.5 -bottom-1.5" />
+                  <div className="absolute -top-8 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-[#222] shadow">
+                    <span>{placement.name}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {draftRect ? (
               <div
-                className="absolute rounded-md border-2 border-dashed border-primary bg-primary/10"
+                className="absolute border-2 border-dashed border-[#ff9d73] bg-[#ff8b5f14]"
                 style={{
                   left: `${draftRect.left}%`,
                   top: `${draftRect.top}%`,
@@ -499,6 +330,522 @@ function PlacementCanvas({
             ) : null}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PlacementForm({
+  placement,
+  onChange,
+  onDelete,
+}: {
+  placement?: ProductSetPlacement;
+  onChange: (next: ProductSetPlacement) => void;
+  onDelete: () => void;
+}) {
+  if (!placement) {
+    return (
+      <div className="rounded-xl border border-dashed border-[#3a3a3d] bg-[#121315] px-4 py-8 text-center text-[12px] text-[#7f8189]">
+        先在中间画布创建或选中一个印花区域
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[#3a3a3d] bg-[#121315] p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="rounded bg-[#ff8d5a1a] px-2 py-1 text-[11px] font-medium text-[#ff9b72]">
+          {placement.name}
+        </span>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="inline-flex items-center gap-1 text-[11px] text-[#ff8b7a]"
+        >
+          <Trash2 size={12} /> 删除
+        </button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="区域名称">
+          <input
+            className={fieldCls(true)}
+            value={placement.name}
+            onChange={(event) => onChange({ ...placement, name: event.target.value })}
+          />
+        </Field>
+        <Field label="区域 ID">
+          <input
+            className={fieldCls(true)}
+            value={placement.id}
+            onChange={(event) => onChange({ ...placement, id: event.target.value })}
+          />
+        </Field>
+        <Field label="左侧位置（%）">
+          <input
+            type="number"
+            className={fieldCls(true)}
+            value={placement.left}
+            onChange={(event) => onChange({ ...placement, left: clamp(Number(event.target.value) || 0, 0, 100) })}
+          />
+        </Field>
+        <Field label="顶部位置（%）">
+          <input
+            type="number"
+            className={fieldCls(true)}
+            value={placement.top}
+            onChange={(event) => onChange({ ...placement, top: clamp(Number(event.target.value) || 0, 0, 100) })}
+          />
+        </Field>
+        <Field label="区域宽度（%）">
+          <input
+            type="number"
+            className={fieldCls(true)}
+            value={placement.width}
+            onChange={(event) =>
+              onChange({ ...placement, width: clamp(Number(event.target.value) || 0, 0, 100) })
+            }
+          />
+        </Field>
+        <Field label="区域高度（%）">
+          <input
+            type="number"
+            className={fieldCls(true)}
+            value={placement.height}
+            onChange={(event) =>
+              onChange({ ...placement, height: clamp(Number(event.target.value) || 0, 0, 100) })
+            }
+          />
+        </Field>
+        <Field label="印花底图 URL" className="sm:col-span-2">
+          <input className={fieldCls(true)} placeholder="https://... 或上传本地图案" />
+        </Field>
+        <div className="sm:col-span-2 flex gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-[#4a4b50] px-3 py-2 text-[11px] text-white/90 hover:border-[#d16d41]"
+          >
+            <Upload size={12} />
+            上传印花底图
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-[#33353a] px-3 py-2 text-[11px] text-[#7f8189]"
+          >
+            我的空间
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditorSidebar({
+  editing,
+  activeImage,
+  selectedPlacement,
+  onTemplateChange,
+  onImageChange,
+  onImageUpload,
+  onDeleteImage,
+  onAddPlacement,
+  onPlacementChange,
+  onDeletePlacement,
+}: {
+  editing: OfficialProductSetTemplate;
+  activeImage?: ProductSetMockupImage;
+  selectedPlacement?: ProductSetPlacement;
+  onTemplateChange: (next: OfficialProductSetTemplate) => void;
+  onImageChange: (next: ProductSetMockupImage) => void;
+  onImageUpload: (file?: File) => void;
+  onDeleteImage: () => void;
+  onAddPlacement: () => void;
+  onPlacementChange: (next: ProductSetPlacement) => void;
+  onDeletePlacement: () => void;
+}) {
+  return (
+    <div className="flex min-h-full flex-col bg-[#191a1d] text-white">
+      <div className="border-b border-[#2f3034] px-4 py-4">
+        <div className="text-[12px] font-semibold text-white/92">基础信息</div>
+      </div>
+      <div className="space-y-4 px-4 py-4">
+        <div className="space-y-3 rounded-xl border border-[#2f3034] bg-[#101114] p-3">
+          <Field label="模板名称">
+            <input
+              className={fieldCls(true)}
+              value={editing.name}
+              onChange={(event) => onTemplateChange({ ...editing, name: event.target.value })}
+            />
+          </Field>
+          <Field label="品类">
+            <select
+              className={fieldCls(true)}
+              value={editing.category}
+              onChange={(event) =>
+                onTemplateChange({ ...editing, category: event.target.value as ProductSetCategory })
+              }
+            >
+              {PRODUCT_SET_CATEGORY_TABS.map((tab) => (
+                <option key={tab} value={tab}>
+                  {tab}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="排序">
+            <input
+              type="number"
+              className={fieldCls(true)}
+              value={editing.sortOrder}
+              onChange={(event) => onTemplateChange({ ...editing, sortOrder: Number(event.target.value) || 0 })}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-[12px] text-white/88">
+            <input
+              type="checkbox"
+              checked={editing.enabled}
+              onChange={(event) => onTemplateChange({ ...editing, enabled: event.target.checked })}
+            />
+            在前台官方模板中展示
+          </label>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-[#2f3034] bg-[#101114] p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[12px] font-semibold text-white/92">当前轮播图</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#7f8189]">{activeImage ? "已选中" : "未选择"}</span>
+              {activeImage ? (
+                <button
+                  type="button"
+                  onClick={onDeleteImage}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#ff8b7a]"
+                >
+                  <Trash2 size={12} /> 删除
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <Field label="图片名称">
+            <input
+              className={fieldCls(true)}
+              value={activeImage?.name ?? ""}
+              disabled={!activeImage}
+              onChange={(event) => {
+                if (!activeImage) return;
+                onImageChange({ ...activeImage, name: event.target.value });
+              }}
+            />
+          </Field>
+          <Field label="图片 URL">
+            <input
+              className={fieldCls(true)}
+              value={activeImage?.imageUrl ?? ""}
+              disabled={!activeImage}
+              placeholder="https://... 或上传本地图片"
+              onChange={(event) => {
+                if (!activeImage) return;
+                onImageChange({ ...activeImage, imageUrl: event.target.value });
+              }}
+            />
+          </Field>
+          <div className="flex gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#47484d] px-3 py-2 text-[11px] text-white/90 hover:border-[#d16d41]">
+              <Upload size={12} />
+              上传本地图片
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  onImageUpload(event.target.files?.[0]);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-[#2f3034] bg-[#101114] p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[12px] font-semibold text-white/92">当前图片轮播图</div>
+            <button
+              type="button"
+              onClick={onAddPlacement}
+              className="inline-flex items-center gap-1 text-[11px] text-[#ff9b72]"
+            >
+              <Plus size={12} /> 添加印花区域
+            </button>
+          </div>
+          {activeImage ? (
+            <div className="space-y-2 rounded-xl border border-[#3a3a3d] bg-[#121315] p-3">
+              <span className="inline-flex rounded bg-[#ffffff0d] px-2 py-1 text-[11px] text-white/88">
+                {activeImage.name || "未命名图片"}
+              </span>
+              <div className="rounded-md border border-[#32343a] bg-[#0d0e10] p-2">
+                {activeImage.imageUrl ? (
+                  <img src={activeImage.imageUrl} alt={activeImage.name} className="aspect-[4/3] w-full rounded object-cover" />
+                ) : (
+                  <div className="flex aspect-[4/3] items-center justify-center text-[11px] text-[#7f8189]">
+                    暂无图片预览
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[#3a3a3d] px-4 py-8 text-center text-[12px] text-[#7f8189]">
+              先从左侧选择一张商品图
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-[#2f3034] bg-[#101114] p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[12px] font-semibold text-white/92">印花区域</div>
+            <span className="text-[10px] text-[#7f8189]">实时同步画布</span>
+          </div>
+          <PlacementForm placement={selectedPlacement} onChange={onPlacementChange} onDelete={onDeletePlacement} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditorLayout({
+  editing,
+  activeImageId,
+  selectedPlacementId,
+  onClose,
+  onSave,
+  onTemplateChange,
+  onActiveImageIdChange,
+  onSelectedPlacementIdChange,
+  onUploadImage,
+}: {
+  editing: OfficialProductSetTemplate;
+  activeImageId: string;
+  selectedPlacementId: string;
+  onClose: () => void;
+  onSave: () => void;
+  onTemplateChange: (next: OfficialProductSetTemplate) => void;
+  onActiveImageIdChange: (imageId: string) => void;
+  onSelectedPlacementIdChange: (placementId: string) => void;
+  onUploadImage: (imageId: string, file?: File) => void;
+}) {
+  const activeImage = editing.images.find((image) => image.id === activeImageId) ?? editing.images[0];
+  const selectedPlacement = activeImage?.placements.find((placement) => placement.id === selectedPlacementId);
+  const imageIndex = activeImage ? editing.images.findIndex((image) => image.id === activeImage.id) : -1;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#111214] text-white">
+      <div className="flex h-11 items-center justify-between border-b border-[#292a2e] bg-[#1a1b1f] px-4">
+        <div className="flex items-center gap-3 text-[12px]">
+          <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-white/80 hover:text-white">
+            <ChevronLeft size={14} />
+            返回
+          </button>
+          <span className="text-white/90">{editing.name || "未命名模板"}</span>
+          <div className="ml-2 flex items-center gap-1 text-[#7f8189]">
+            <button type="button" className="rounded p-1 hover:bg-[#ffffff10] hover:text-white">
+              <Undo2 size={13} />
+            </button>
+            <button type="button" className="rounded p-1 hover:bg-[#ffffff10] hover:text-white">
+              <Redo2 size={13} />
+            </button>
+            <button type="button" className="rounded p-1 hover:bg-[#ffffff10] hover:text-white">
+              <Copy size={13} />
+            </button>
+            <button type="button" className="rounded p-1 hover:bg-[#ffffff10] hover:text-white">
+              <GripVertical size={13} />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSave}
+            className="inline-flex items-center gap-1 rounded-md bg-[#c66e45] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[#d6794f]"
+          >
+            <Save size={13} />
+            保存
+          </button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="grid min-h-full grid-cols-[104px_minmax(0,1fr)_360px]">
+          <ThumbnailRail
+            images={editing.images}
+            activeImageId={activeImage?.id ?? ""}
+            onSelect={(imageId) => {
+              onActiveImageIdChange(imageId);
+              const image = editing.images.find((item) => item.id === imageId);
+              onSelectedPlacementIdChange(image?.placements[0]?.id ?? "");
+            }}
+            onCreate={() => {
+              const imageId = createProductSetImageId();
+              const next = {
+                ...editing,
+                images: [
+                  ...editing.images,
+                  {
+                    id: imageId,
+                    name: `轮播图${editing.images.length + 1}`,
+                    imageUrl: "",
+                    placements: [],
+                  },
+                ],
+              };
+              onTemplateChange(next);
+              onActiveImageIdChange(imageId);
+              onSelectedPlacementIdChange("");
+            }}
+            onDelete={(imageId) => {
+              const nextImages = editing.images.filter((item) => item.id !== imageId);
+              onTemplateChange({ ...editing, images: nextImages });
+              const nextActive =
+                nextImages[Math.max(0, imageIndex - (activeImage?.id === imageId ? 1 : 0))] ?? nextImages[0];
+              onActiveImageIdChange(nextActive?.id ?? "");
+              onSelectedPlacementIdChange(nextActive?.placements[0]?.id ?? "");
+            }}
+          />
+
+          <div className="flex min-h-full flex-col">
+            <div className="flex h-10 items-center justify-between border-b border-[#292a2e] bg-[#0e0f11] px-4 text-[11px] text-[#999ba4]">
+              <div className="flex items-center gap-2">
+                <span className="text-white/92">{editing.name || "未命名模板"}</span>
+                <ChevronRight size={12} />
+                <span>{activeImage?.name || "未选择轮播图"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-[#3c3d42] px-2 py-0.5">
+                  {selectedPlacement ? selectedPlacement.name : "未选中区域"}
+                </span>
+              </div>
+            </div>
+            <PlacementEditorCanvas
+              image={activeImage}
+              selectedPlacementId={selectedPlacementId}
+              onSelectPlacement={onSelectedPlacementIdChange}
+              onChangePlacements={(placements) => {
+                if (!activeImage) return;
+                onTemplateChange(updateImageAt(editing, activeImage.id, (image) => ({ ...image, placements })));
+              }}
+            />
+          </div>
+
+          <EditorSidebar
+            editing={editing}
+            activeImage={activeImage}
+            selectedPlacement={selectedPlacement}
+            onTemplateChange={onTemplateChange}
+            onImageChange={(next) => {
+              if (!activeImage) return;
+              onTemplateChange(updateImageAt(editing, activeImage.id, () => next));
+            }}
+            onImageUpload={(file) => {
+              if (!activeImage) return;
+              void onUploadImage(activeImage.id, file);
+            }}
+            onDeleteImage={() => {
+              if (!activeImage || editing.images.length <= 1) return;
+              const nextImages = editing.images.filter((item) => item.id !== activeImage.id);
+              onTemplateChange({ ...editing, images: nextImages });
+              const nextActive = nextImages[Math.max(0, imageIndex - 1)] ?? nextImages[0];
+              onActiveImageIdChange(nextActive?.id ?? "");
+              onSelectedPlacementIdChange(nextActive?.placements[0]?.id ?? "");
+            }}
+            onAddPlacement={() => {
+              if (!activeImage) return;
+              const placementId = createProductSetPlacementId();
+              onTemplateChange(
+                updateImageAt(editing, activeImage.id, (image) => ({
+                  ...image,
+                  placements: [
+                    ...image.placements,
+                    {
+                      id: placementId,
+                      name: `印花位 ${image.placements.length + 1}`,
+                      left: 24,
+                      top: 24,
+                      width: 32,
+                      height: 32,
+                      angle: 0,
+                    },
+                  ],
+                })),
+              );
+              onSelectedPlacementIdChange(placementId);
+            }}
+            onPlacementChange={(next) => {
+              if (!activeImage || !selectedPlacement) return;
+              onTemplateChange(
+                updateImageAt(editing, activeImage.id, (image) => ({
+                  ...image,
+                  placements: image.placements.map((placement) =>
+                    placement.id === selectedPlacement.id ? next : placement,
+                  ),
+                })),
+              );
+            }}
+            onDeletePlacement={() => {
+              if (!activeImage || !selectedPlacement) return;
+              const nextPlacements = activeImage.placements.filter(
+                (placement) => placement.id !== selectedPlacement.id,
+              );
+              onTemplateChange(
+                updateImageAt(editing, activeImage.id, (image) => ({
+                  ...image,
+                  placements: nextPlacements,
+                })),
+              );
+              onSelectedPlacementIdChange(nextPlacements[0]?.id ?? "");
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplatePreview({
+  template,
+}: {
+  template: Pick<OfficialProductSetTemplate, "name" | "images" | "category" | "enabled">;
+}) {
+  const previewImage = template.images[0];
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="relative aspect-[16/10] bg-muted/25">
+        {previewImage?.imageUrl ? (
+          <>
+            <img src={previewImage.imageUrl} alt={previewImage.name} className="h-full w-full object-cover" />
+            <div className="pointer-events-none absolute inset-0">
+              {previewImage.placements.map((placement) => (
+                <div
+                  key={placement.id}
+                  className="absolute rounded-md border-2 border-primary/80 bg-primary/10"
+                  style={{
+                    left: `${placement.left}%`,
+                    top: `${placement.top}%`,
+                    width: `${placement.width}%`,
+                    height: `${placement.height}%`,
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">暂无图片</div>
+        )}
+      </div>
+      <div className="space-y-1 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Badge tone={template.enabled ? "success" : "default"}>{template.enabled ? "启用" : "停用"}</Badge>
+          <span className="text-[11px] text-muted-foreground">{template.category}</span>
+        </div>
+        <div className="truncate text-[13px] font-medium text-foreground">{template.name}</div>
       </div>
     </div>
   );
@@ -517,15 +864,10 @@ export function ProductSetTemplatesAdminPage() {
     if (categoryFilter) list = list.filter((template) => template.category === categoryFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(
-        (template) => template.name.toLowerCase().includes(q) || template.category.includes(q),
-      );
+      list = list.filter((template) => template.name.toLowerCase().includes(q) || template.category.includes(q));
     }
     return list;
   }, [templates, categoryFilter, search]);
-
-  const activeImage =
-    editing?.images.find((image) => image.id === activeImageId) ?? editing?.images[0];
 
   const openNew = () => {
     const category = (categoryFilter || "推荐") as ProductSetCategory;
@@ -537,7 +879,7 @@ export function ProductSetTemplatesAdminPage() {
       images: [
         {
           id: firstImageId,
-          name: "主图 1",
+          name: "轮播图1",
           imageUrl: "",
           placements: [],
         },
@@ -566,6 +908,11 @@ export function ProductSetTemplatesAdminPage() {
           ...image,
           name: image.name.trim() || "未命名图片",
           imageUrl: image.imageUrl.trim(),
+          placements: image.placements.map((placement, index) => ({
+            ...placement,
+            id: placement.id.trim() || `placement-${index + 1}`,
+            name: placement.name.trim() || `印花位 ${index + 1}`,
+          })),
         }))
         .filter((image) => image.imageUrl),
     });
@@ -583,9 +930,9 @@ export function ProductSetTemplatesAdminPage() {
   return (
     <AdminShell
       title="套图模版"
-      subtitle="按每张套图图片分别配置可替换区域，拖拽画布即可实时预览 AI 实际会替换的位置"
+      subtitle="维护商品套图模板与印花区域，编辑时使用三栏工作台直接拖拽定位"
     >
-      <div className="max-w-[1180px] space-y-4 p-6">
+      <div className="max-w-[1240px] space-y-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -604,7 +951,7 @@ export function ProductSetTemplatesAdminPage() {
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 className={`${inputCls} w-[220px] pl-8`}
-                placeholder="搜索模版名称…"
+                placeholder="搜索模板名称…"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -617,306 +964,65 @@ export function ProductSetTemplatesAdminPage() {
           </Btn>
         </div>
 
-        <Card className="!p-0 overflow-hidden">
-          <table className="w-full text-[13px]">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="w-16 px-4 py-3 text-left font-medium">预览</th>
-                <th className="px-4 py-3 text-left font-medium">名称</th>
-                <th className="px-4 py-3 text-left font-medium">品类</th>
-                <th className="px-4 py-3 text-left font-medium">套图数</th>
-                <th className="px-4 py-3 text-left font-medium">状态</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => (
-                <tr key={row.id} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    {row.images[0]?.imageUrl ? (
-                      <img
-                        src={row.images[0].imageUrl}
-                        alt=""
-                        className="h-12 w-10 rounded object-cover bg-muted"
-                      />
-                    ) : (
-                      <div className="h-12 w-10 rounded bg-muted" />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium">{row.name}</td>
-                  <td className="px-4 py-3">{row.category}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.images.length}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone={row.enabled ? "success" : "default"}>
-                      {row.enabled ? "启用" : "停用"}
-                    </Badge>
-                  </td>
-                  <td className="space-x-2 whitespace-nowrap px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      className="text-[12px] font-medium text-primary"
-                      onClick={() => openEdit(row)}
-                    >
-                      编辑
-                    </button>
-                    <button
-                      type="button"
-                      className="text-[12px] font-medium text-destructive"
-                      onClick={() => {
-                        if (confirm(`删除官方模版「${row.name}」？`)) {
-                          deleteOfficialProductSetTemplate(row.id);
-                        }
-                      }}
-                    >
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-muted-foreground">暂无模版</p>
-          ) : null}
-        </Card>
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((template) => (
+            <Card key={template.id} className="overflow-hidden !p-0">
+              <TemplatePreview template={template} />
+              <div className="flex items-center justify-between border-t border-border px-4 py-3">
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-semibold text-foreground">{template.name}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{template.images.length} 张套图图片</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-primary hover:bg-primary/10"
+                    onClick={() => openEdit(template)}
+                  >
+                    <SquarePen size={13} />
+                    编辑
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      if (confirm(`删除官方模版「${template.name}」？`)) {
+                        deleteOfficialProductSetTemplate(template.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    删除
+                  </button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
 
-        <p className="text-[12px] text-muted-foreground">
-          每一张套图图片都可以单独配置多个可替换区域。前台用户悬停模板时，会按当前图片显示这些区域；提交任务时，也会把图片级区域配置一起传给模型。
-        </p>
+        {filtered.length === 0 ? (
+          <Card>
+            <div className="py-12 text-center text-[13px] text-muted-foreground">当前筛选下暂无套图模板</div>
+          </Card>
+        ) : null}
       </div>
 
       {editing ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[92vh] w-full max-w-[1380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-            <div className="shrink-0 border-b border-border px-5 py-4 font-semibold">
-              {templates.some((item) => item.id === editing.id) ? "编辑官方模版" : "新建官方模版"}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_360px]">
-                <div className="space-y-4">
-                  <Card title="基础信息">
-                    <div className="grid gap-4">
-                      <Field label="模版名称">
-                        <input
-                          className={inputCls}
-                          value={editing.name}
-                          onChange={(event) => setEditing({ ...editing, name: event.target.value })}
-                        />
-                      </Field>
-                      <Field label="品类">
-                        <select
-                          className={inputCls}
-                          value={editing.category}
-                          onChange={(event) =>
-                            setEditing({ ...editing, category: event.target.value as ProductSetCategory })
-                          }
-                        >
-                          {PRODUCT_SET_CATEGORY_TABS.map((tab) => (
-                            <option key={tab} value={tab}>
-                              {tab}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="排序">
-                        <input
-                          type="number"
-                          className={inputCls}
-                          value={editing.sortOrder}
-                          onChange={(event) =>
-                            setEditing({ ...editing, sortOrder: Number(event.target.value) || 0 })
-                          }
-                        />
-                      </Field>
-                      <label className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={editing.enabled}
-                          onChange={(event) => setEditing({ ...editing, enabled: event.target.checked })}
-                        />
-                        在用户端官方 Tab 展示
-                      </label>
-                    </div>
-                  </Card>
-
-                  <Card
-                    title="套图图片配置"
-                    action={
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-[12px] text-primary"
-                        onClick={() => {
-                          const imageId = createProductSetImageId();
-                          setEditing({
-                            ...editing,
-                            images: [
-                              ...editing.images,
-                              {
-                                id: imageId,
-                                name: `图片 ${editing.images.length + 1}`,
-                                imageUrl: "",
-                                placements: [],
-                              },
-                            ],
-                          });
-                          setActiveImageId(imageId);
-                          setSelectedPlacementId("");
-                        }}
-                      >
-                        <Plus size={13} /> 新增套图图片
-                      </button>
-                    }
-                  >
-                    <div className="space-y-3">
-                      {editing.images.length > 0 ? (
-                        editing.images.map((image, index) => (
-                          <ImageItem
-                            key={image.id}
-                            index={index}
-                            image={image}
-                            active={activeImage?.id === image.id}
-                            onSelect={() => {
-                              setActiveImageId(image.id);
-                              setSelectedPlacementId(image.placements[0]?.id ?? "");
-                            }}
-                            onChange={(next) => {
-                              setEditing(updateImageAt(editing, image.id, () => next));
-                            }}
-                            onUpload={(file) => {
-                              void uploadImage(image.id, file);
-                            }}
-                            onDelete={() => {
-                              const nextImages = editing.images.filter((item) => item.id !== image.id);
-                              setEditing({ ...editing, images: nextImages });
-                              const nextActive = nextImages[0];
-                              setActiveImageId(nextActive?.id ?? "");
-                              setSelectedPlacementId(nextActive?.placements[0]?.id ?? "");
-                            }}
-                          />
-                        ))
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-[12px] text-muted-foreground">
-                          还没有套图图片。建议至少配置 1 张主图，再补几张场景图或细节图，前台卡片会更完整。
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                </div>
-
-                <div className="space-y-4">
-                  <Card title={activeImage ? `当前编辑：${activeImage.name}` : "拖拽画布"}>
-                    <PlacementCanvas
-                      image={activeImage}
-                      selectedPlacementId={selectedPlacementId}
-                      onSelectPlacement={setSelectedPlacementId}
-                      onChangePlacements={(placements) => {
-                        if (!editing || !activeImage) return;
-                        setEditing(
-                          updateImageAt(editing, activeImage.id, (image) => ({ ...image, placements })),
-                        );
-                      }}
-                    />
-                  </Card>
-                  <Card title="前台卡片预览">
-                    <TemplatePreview
-                      template={editing}
-                      activeImageId={activeImageId}
-                    />
-                  </Card>
-                </div>
-
-                <div className="space-y-4">
-                  <Card
-                    title="当前图片区域配置"
-                    action={
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-[12px] text-primary"
-                        onClick={() => {
-                          if (!editing || !activeImage) return;
-                          const placementId = createProductSetPlacementId();
-                          setEditing(
-                            updateImageAt(editing, activeImage.id, (image) => ({
-                              ...image,
-                              placements: [
-                                ...image.placements,
-                                {
-                                  id: placementId,
-                                  name: `区域 ${image.placements.length + 1}`,
-                                  left: 24,
-                                  top: 24,
-                                  width: 36,
-                                  height: 36,
-                                  angle: 0,
-                                },
-                              ],
-                            })),
-                          );
-                          setSelectedPlacementId(placementId);
-                        }}
-                      >
-                        <Plus size={13} /> 新增区域
-                      </button>
-                    }
-                  >
-                    <PlacementList
-                      placements={activeImage?.placements ?? []}
-                      selectedPlacementId={selectedPlacementId}
-                      onSelect={setSelectedPlacementId}
-                      onChange={(placementId, next) => {
-                        if (!editing || !activeImage) return;
-                        setEditing(
-                          updateImageAt(editing, activeImage.id, (image) => ({
-                            ...image,
-                            placements: image.placements.map((placement) =>
-                              placement.id === placementId ? next : placement,
-                            ),
-                          })),
-                        );
-                      }}
-                      onDelete={(placementId) => {
-                        if (!editing || !activeImage) return;
-                        const nextPlacements = activeImage.placements.filter(
-                          (placement) => placement.id !== placementId,
-                        );
-                        setEditing(
-                          updateImageAt(editing, activeImage.id, (image) => ({
-                            ...image,
-                            placements: nextPlacements,
-                          })),
-                        );
-                        setSelectedPlacementId(nextPlacements[0]?.id ?? "");
-                      }}
-                    />
-                  </Card>
-
-                  <Card title="配置建议">
-                    <div className="space-y-3 text-[12px] leading-5 text-muted-foreground">
-                      <p>先选中左侧某一张套图图片，再在中间拖出区域，这样每张图的套取位置会独立保存。</p>
-                      <p>如果同一张图上有多个可替换位置，可以继续新增区域，模型提交时会收到完整的图片级区域列表。</p>
-                      <p>区域越贴近实际可替换内容，后续 AI 合成的稳定性越高，尤其适合手机壳、挂钟和拼图摆件这类多角度模板。</p>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-              <Btn
-                variant="secondary"
-                onClick={() => {
-                  setEditing(null);
-                  setActiveImageId("");
-                  setSelectedPlacementId("");
-                }}
-              >
-                取消
-              </Btn>
-              <Btn onClick={save}>保存</Btn>
-            </div>
-          </div>
-        </div>
+        <EditorLayout
+          editing={editing}
+          activeImageId={activeImageId}
+          selectedPlacementId={selectedPlacementId}
+          onClose={() => {
+            setEditing(null);
+            setActiveImageId("");
+            setSelectedPlacementId("");
+          }}
+          onSave={save}
+          onTemplateChange={setEditing}
+          onActiveImageIdChange={setActiveImageId}
+          onSelectedPlacementIdChange={setSelectedPlacementId}
+          onUploadImage={uploadImage}
+        />
       ) : null}
     </AdminShell>
   );
