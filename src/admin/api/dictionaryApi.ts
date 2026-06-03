@@ -1,5 +1,4 @@
-import { http } from "../../shared/http";
-import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type DictionaryOption = {
   label: string;
@@ -8,20 +7,16 @@ export type DictionaryOption = {
   color?: string;
 };
 
-export async function getAllDictionaries(
-  accessToken: string,
-): Promise<Record<string, DictionaryOption[]>> {
-  const res = await http.get<AdminApiResponse<Record<string, DictionaryOption[]>>>(
+export async function getAllDictionaries(): Promise<Record<string, DictionaryOption[]>> {
+  return adminHttp.get<Record<string, DictionaryOption[]>>(
     "/admin/data_center/getAllDictionary",
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取数据字典失败" },
   );
-  return assertSuccess(res, "获取数据字典失败");
 }
 
 export async function getDictionaryByCode(
   typeCode: string,
-  accessToken: string,
 ): Promise<DictionaryOption[]> {
-  const all = await getAllDictionaries(accessToken);
+  const all = await getAllDictionaries();
   return all[typeCode] ?? [];
 }

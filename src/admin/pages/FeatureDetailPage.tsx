@@ -5,7 +5,6 @@ import { Badge, Btn, Card, Field, Tabs, inputCls, textareaCls } from "../compone
 import { getDictionaryByCode } from "../api/dictionaryApi";
 import {
   fetchFeatureConfigDetail,
-  getAdminAccessToken,
   getFeatureConfig,
   persistFeatureConfig,
   useAdminStore,
@@ -29,9 +28,7 @@ export function FeatureDetailPage() {
   const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
-    const token = getAdminAccessToken();
-    if (!token) return;
-    void getDictionaryByCode("ai_provider", token)
+    void getDictionaryByCode("ai_provider")
       .then((items) => {
         setProviderOptions(
           items.map((item) => ({

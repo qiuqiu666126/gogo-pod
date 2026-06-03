@@ -1,5 +1,4 @@
-import { http } from "../../shared/http";
-import { getAdminAuthHeaders } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type RecommendCase = {
   id: number;
@@ -22,22 +21,6 @@ export type BackendRecommendCase = {
   video_url: string;
   sort: number;
 };
-
-type ApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
-function unwrapResponse<T>(res: ApiResponse<T> | T, fallbackMessage: string): T {
-  if (res && typeof res === "object" && "code" in res && "data" in res) {
-    if (res.code !== 200) {
-      throw new Error(res.message || fallbackMessage);
-    }
-    return res.data;
-  }
-  return res as T;
-}
 
 export function mapFromBackend(item: BackendRecommendCase): RecommendCase {
   return {
@@ -66,56 +49,48 @@ export function mapToBackend(item: Partial<RecommendCase>): Partial<BackendRecom
 }
 
 export async function getRecommendCaseList(
-  accessToken: string,
   query?: { keyword?: string }
 ): Promise<RecommendCase[]> {
-  const res = await http.get<ApiResponse<BackendRecommendCase[]>>(
+  const data = await adminHttp.get<BackendRecommendCase[]>(
     "/admin/recommend-case/list",
     {
-      headers: await getAdminAuthHeaders(),
+      fallbackMessage: "获取推荐案例列表失败",
       query,
     }
   );
-  const data = unwrapResponse(res, "获取推荐案例列表失败");
   return data.map(mapFromBackend);
 }
 
 export async function createRecommendCase(
-  item: Omit<RecommendCase, "id">,
-  accessToken: string
+  item: Omit<RecommendCase, "id">
 ): Promise<RecommendCase> {
   const payload = mapToBackend(item);
-  const res = await http.post<ApiResponse<BackendRecommendCase>>(
+  const data = await adminHttp.post<BackendRecommendCase>(
     "/admin/recommend-case/store",
     payload,
-    { headers: await getAdminAuthHeaders() }
+    { fallbackMessage: "创建推荐案例失败" }
   );
-  const data = unwrapResponse(res, "创建推荐案例失败");
   return mapFromBackend(data);
 }
 
 export async function updateRecommendCase(
   id: number,
-  item: Partial<RecommendCase>,
-  accessToken: string
+  item: Partial<RecommendCase>
 ): Promise<RecommendCase> {
   const payload = mapToBackend(item);
-  const res = await http.put<ApiResponse<BackendRecommendCase>>(
+  const data = await adminHttp.put<BackendRecommendCase>(
     `/admin/recommend-case/${id}`,
     payload,
-    { headers: await getAdminAuthHeaders() }
+    { fallbackMessage: "修改推荐案例失败" }
   );
-  const data = unwrapResponse(res, "修改推荐案例失败");
   return mapFromBackend(data);
 }
 
 export async function deleteRecommendCase(
-  id: number,
-  accessToken: string
+  id: number
 ): Promise<void> {
-  const res = await http.delete<ApiResponse<unknown>>(
+  await adminHttp.delete<unknown>(
     `/admin/recommend-case/${id}`,
-    { headers: await getAdminAuthHeaders() }
+    { fallbackMessage: "删除推荐案例失败" }
   );
-  unwrapResponse(res, "删除推荐案例失败");
 }

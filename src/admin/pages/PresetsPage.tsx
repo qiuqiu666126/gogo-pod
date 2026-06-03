@@ -178,9 +178,9 @@ export function PresetsPage() {
       };
 
       if (editing.dbId) {
-        await updateAiScenePreset(editing.dbId, payload, token);
+        await updateAiScenePreset(editing.dbId, payload);
       } else {
-        await createAiScenePreset(payload, token);
+        await createAiScenePreset(payload);
       }
 
       await reloadAdminAiData();
@@ -199,11 +199,6 @@ export function PresetsPage() {
 
   const removePreset = async (row: SceneFormPreset) => {
     if (!confirm(`删除「${row.label}」？`)) return;
-    const token = getAdminAccessToken();
-    if (!token) {
-      setError("未登录");
-      return;
-    }
     if (!row.dbId) {
       setError("缺少后端 ID，无法删除");
       return;
@@ -211,7 +206,7 @@ export function PresetsPage() {
 
     setError("");
     try {
-      await deleteAiScenePreset(row.dbId, token);
+      await deleteAiScenePreset(row.dbId);
       await reloadAdminAiData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除场景预设失败");

@@ -1,5 +1,4 @@
-import { http } from "../../shared/http";
-import { getAdminAuthHeaders } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type AdminUserListParams = {
   page: number;
@@ -58,73 +57,80 @@ export type CreateFrontUserBody = {
   remark: string;
 };
 
-type MaybeWrappedResponse<T> =
-  | T
-  | {
-      code: number;
-      message: string;
-      data: T;
-    };
+export type UpdateFrontUserBody = Omit<CreateFrontUserBody, "password">;
 
-function unwrapResponse<T>(res: MaybeWrappedResponse<T>, fallbackMessage: string): T {
-  if (res && typeof res === "object" && "code" in res && "data" in res) {
-    if (res.code !== 200) {
-      throw new Error(res.message || fallbackMessage);
-    }
-    return res.data;
-  }
-  return res as T;
-}
+export type ResetFrontUserPasswordBody = {
+  password: string;
+  password_confirmation: string;
+};
 
 export async function getAdminUserList(
   params: AdminUserListParams,
-  accessToken: string,
 ): Promise<AdminUserListResponse> {
-  const res = await http.get<MaybeWrappedResponse<AdminUserListResponse>>(
-    "/admin/front-user/list",
-    {
-      headers: await getAdminAuthHeaders(),
-      query: {
-        page: params.page,
-        page_size: params.page_size,
-        keyword: params.keyword ?? "",
-        status: params.status,
-      },
+  return adminHttp.get<AdminUserListResponse>("/admin/front-user/list", {
+    fallbackMessage: "获取用户账号列表失败",
+    query: {
+      page: params.page,
+      page_size: params.page_size,
+      keyword: params.keyword ?? "",
+      status: params.status,
     },
-  );
-
-  return unwrapResponse(res, "获取用户账号列表失败");
+  });
 }
 
 export async function getAdminUserStats(
   params: AdminUserListParams,
-  accessToken: string,
 ): Promise<AdminUserStatsResponse> {
-  const res = await http.get<MaybeWrappedResponse<AdminUserStatsResponse>>(
-    "/admin/front-user/stats",
-    {
-      headers: await getAdminAuthHeaders(),
-      query: {
-        page: params.page,
-        page_size: params.page_size,
-        keyword: params.keyword ?? "",
-        status: params.status,
-      },
+  return adminHttp.get<AdminUserStatsResponse>("/admin/front-user/stats", {
+    fallbackMessage: "获取用户账号统计失败",
+    query: {
+      page: params.page,
+      page_size: params.page_size,
+      keyword: params.keyword ?? "",
+      status: params.status,
     },
-  );
-
-  return unwrapResponse(res, "获取用户账号统计失败");
+  });
 }
 
 export async function createFrontUser(
   body: CreateFrontUserBody,
-  accessToken: string,
 ): Promise<unknown> {
-  const res = await http.post<MaybeWrappedResponse<unknown>>(
-    "/admin/front-user",
-    body,
-    { headers: await getAdminAuthHeaders() },
-  );
+  return adminHttp.post<unknown>("/admin/front-user", body, {
+    fallbackMessage: "创建用户失败",
+  });
+}
 
-  return unwrapResponse(res, "创建用户失败");
+export async function updateFrontUser(
+  id: number,
+  body: UpdateFrontUserBody,
+): Promise<unknown> {
+  return adminHttp.put<unknown>(`/admin/front-user/${id}`, body, {
+    fallbackMessage: "编辑用户失败",
+  });
+}
+
+export async function deleteFrontUser(id: number): Promise<unknown> {
+  return adminHttp.delete<unknown>(`/admin/front-user/${id}`, {
+    fallbackMessage: "删除用户失败",
+  });
+}
+
+export async function updateFrontUserStatus(
+  id: number,
+  status: number,
+): Promise<unknown> {
+  return adminHttp.patch<unknown>(
+    `/admin/front-user/${id}/status`,
+    { status },
+    { fallbackMessage: "更新用户状态失败" },
+  );
+}
+
+export async function resetFrontUserPassword(
+  id: number,
+  body: ResetFrontUserPasswordBody,
+): Promise<unknown> {
+  return adminHttp.put<unknown>(`/admin/front-user/${id}/password`, body, {
+    fallbackMessage: "重置用户密码失败",
+  });
 }

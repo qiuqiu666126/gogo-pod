@@ -1,6 +1,5 @@
-import { http } from "../../shared/http";
 import type { FormControl } from "../../shared/sceneFormSchema";
-import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type WorkflowStepSummaryDto = {
   featureCode: string;
@@ -114,12 +113,11 @@ export type WorkflowTemplateListParams = {
 
 export async function listWorkflowTemplates(
   params: WorkflowTemplateListParams,
-  accessToken: string,
 ): Promise<WorkflowTemplateListDto> {
-  const res = await http.get<AdminApiResponse<WorkflowTemplateListDto>>(
+  return adminHttp.get<WorkflowTemplateListDto>(
     "/admin/ai-workflow-template/list",
     {
-      headers: await getAdminAuthHeaders(),
+      fallbackMessage: "获取工作流模版列表失败",
       query: {
         category_code: params.category_code,
         enabled: params.enabled,
@@ -129,84 +127,69 @@ export async function listWorkflowTemplates(
       },
     },
   );
-  return assertSuccess(res, "获取工作流模版列表失败");
 }
 
-export async function getWorkflowTemplateMeta(
-  accessToken: string,
-): Promise<WorkflowTemplateMetaDto> {
-  const res = await http.get<AdminApiResponse<WorkflowTemplateMetaDto>>(
+export async function getWorkflowTemplateMeta(): Promise<WorkflowTemplateMetaDto> {
+  return adminHttp.get<WorkflowTemplateMetaDto>(
     "/admin/ai-workflow-template/meta",
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取工作流元数据失败" },
   );
-  return assertSuccess(res, "获取工作流元数据失败");
 }
 
 export async function getWorkflowStepOptions(
-  accessToken: string,
   featureCode?: string,
 ): Promise<WorkflowStepOptionsDto> {
-  const res = await http.get<AdminApiResponse<WorkflowStepOptionsDto>>(
+  return adminHttp.get<WorkflowStepOptionsDto>(
     "/admin/ai-workflow-template/step-options",
     {
-      headers: await getAdminAuthHeaders(),
+      fallbackMessage: "获取可选工作流步骤失败",
       query: { feature_code: featureCode },
     },
   );
-  return assertSuccess(res, "获取可选工作流步骤失败");
 }
 
 export async function getWorkflowStepSchema(
   scenePresetId: number,
-  accessToken: string,
 ): Promise<WorkflowStepSchemaDto> {
-  const res = await http.get<AdminApiResponse<WorkflowStepSchemaDto>>(
+  return adminHttp.get<WorkflowStepSchemaDto>(
     `/admin/ai-workflow-template/step-schema/${scenePresetId}`,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取节点控件配置失败" },
   );
-  return assertSuccess(res, "获取节点控件配置失败");
 }
 
 export async function getWorkflowTemplateDetail(
   id: number,
-  accessToken: string,
 ): Promise<WorkflowTemplateDetailDto> {
-  const res = await http.get<AdminApiResponse<WorkflowTemplateDetailDto>>(
+  return adminHttp.get<WorkflowTemplateDetailDto>(
     `/admin/ai-workflow-template/${id}`,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取工作流模版详情失败" },
   );
-  return assertSuccess(res, "获取工作流模版详情失败");
 }
 
 export async function createWorkflowTemplate(
   payload: WorkflowTemplateSavePayload,
-  accessToken: string,
 ): Promise<WorkflowTemplateDetailDto> {
-  const res = await http.post<AdminApiResponse<WorkflowTemplateDetailDto>>(
+  return adminHttp.post<WorkflowTemplateDetailDto>(
     "/admin/ai-workflow-template",
     payload,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "创建工作流模版失败" },
   );
-  return assertSuccess(res, "创建工作流模版失败");
 }
 
 export async function updateWorkflowTemplate(
   id: number,
   payload: WorkflowTemplateSavePayload,
-  accessToken: string,
 ): Promise<WorkflowTemplateDetailDto> {
-  const res = await http.put<AdminApiResponse<WorkflowTemplateDetailDto>>(
+  return adminHttp.put<WorkflowTemplateDetailDto>(
     `/admin/ai-workflow-template/${id}`,
     payload,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "保存工作流模版失败" },
   );
-  return assertSuccess(res, "保存工作流模版失败");
 }
 
-export async function deleteWorkflowTemplate(id: number, accessToken: string): Promise<void> {
-  const res = await http.delete<AdminApiResponse<unknown>>(
+export async function deleteWorkflowTemplate(id: number): Promise<void> {
+  await adminHttp.delete<unknown>(
     `/admin/ai-workflow-template/${id}`,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "删除工作流模版失败" },
   );
-  assertSuccess(res, "删除工作流模版失败");
 }
