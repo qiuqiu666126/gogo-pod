@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Eye,
   FolderOpen,
   ImageIcon,
   Loader2,
@@ -9,16 +10,18 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import type { AttachmentListParams, AttachmentOwnerScope } from "../../shared/attachmentUtils";
+import type { AttachmentDto, AttachmentListParams, AttachmentOwnerScope } from "../../shared/attachmentUtils";
 import {
   formatAttachmentMeta,
   formatAttachmentOwner,
   formatAttachmentTime,
+  isPreviewableAttachment,
   resolveAttachmentUrl,
 } from "../../shared/attachmentUtils";
 import * as adminAttachmentApi from "../api/attachmentApi";
 import * as frontAttachmentApi from "../../app/api/attachmentApi";
-import { AttachmentImage } from "./AttachmentImage";
+import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
+import { AttachmentThumbnail } from "./AttachmentThumbnail";
 import { Btn, fieldInputCls, inputCls } from "./ui";
 
 export type AttachmentPickerProps = {
@@ -68,6 +71,7 @@ function AttachmentLibraryModal({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [previewItem, setPreviewItem] = useState<AttachmentDto | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 24;
   const isAdminScope = scope === "admin";
@@ -83,7 +87,7 @@ function AttachmentLibraryModal({
         owner_scope: isAdminScope ? ownerScope : undefined,
         file_type: fileType || "image",
       });
-      setItems(res.list.filter((item) => item.is_image));
+      setItems(res.list);
       setTotal(res.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载附件失败");
@@ -187,6 +191,7 @@ function AttachmentLibraryModal({
             }}
           >
             <option value="image">全部图片</option>
+            <option value="video">全部视频</option>
             <option value="png">PNG</option>
             <option value="jpg">JPG</option>
             <option value="jpeg">JPEG</option>
@@ -241,41 +246,64 @@ function AttachmentLibraryModal({
             </div>
           ) : items.length === 0 ? (
             <div className="py-16 text-center text-[13px] text-muted-foreground">
-              暂无符合条件的图片附件
+              暂无符合条件的附件
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(item.url);
-                    onClose();
-                  }}
-                  className="group flex gap-3 overflow-hidden rounded-xl border border-border bg-muted/10 p-3 text-left transition hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm"
+                  className="group relative overflow-hidden rounded-xl border border-border bg-muted/10 transition hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm"
                 >
-                  <AttachmentImage
-                    url={item.url}
-                    alt={item.origin_name}
-                    className="h-20 w-20 shrink-0 rounded-lg border border-border object-cover"
-                    fallbackClassName="h-20 w-20 shrink-0 rounded-lg border border-border"
-                  />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="truncate text-[13px] font-medium text-foreground">{item.origin_name}</div>
-                    <div className="text-[11px] leading-5 text-muted-foreground">{formatAttachmentMeta(item)}</div>
-                    {isAdminScope ? (
-                      <div className="text-[11px] text-muted-foreground">{formatAttachmentOwner(item)}</div>
-                    ) : null}
-                    <div className="text-[10px] text-muted-foreground/80">
-                      {formatAttachmentTime(item.created_at)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(item.url);
+                      onClose();
+                    }}
+                    className="flex w-full gap-3 p-3 text-left"
+                  >
+                    <AttachmentThumbnail
+                      item={item}
+                      className="h-20 w-20 shrink-0 rounded-lg border border-border"
+                      fallbackClassName="h-20 w-20 shrink-0 rounded-lg border border-border"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="truncate text-[13px] font-medium text-foreground">{item.origin_name}</div>
+                      <div className="text-[11px] leading-5 text-muted-foreground">{formatAttachmentMeta(item)}</div>
+                      {isAdminScope ? (
+                        <div className="text-[11px] text-muted-foreground">{formatAttachmentOwner(item)}</div>
+                      ) : null}
+                      <div className="text-[10px] text-muted-foreground/80">
+                        {formatAttachmentTime(item.created_at)}
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  {isPreviewableAttachment(item) ? (
+                    <button
+                      type="button"
+                      aria-label="预览附件"
+                      className="absolute right-2 top-2 rounded-md bg-black/55 p-1.5 text-white opacity-0 transition group-hover:opacity-100 hover:bg-black/70"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setPreviewItem(item);
+                      }}
+                    >
+                      <Eye size={14} />
+                    </button>
+                  ) : null}
+                </div>
               ))}
             </div>
           )}
         </div>
+
+        <AttachmentPreviewModal
+          item={previewItem}
+          open={Boolean(previewItem)}
+          onClose={() => setPreviewItem(null)}
+          showOwner={isAdminScope}
+        />
 
         <div className="flex items-center justify-between border-t border-border px-5 py-3 text-[12px] text-muted-foreground">
           <span>
@@ -319,9 +347,21 @@ export function AttachmentPicker({
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [valuePreviewOpen, setValuePreviewOpen] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const previewUrl = resolveAttachmentUrl(value);
   const isDark = tone === "dark";
+
+  const valuePreviewItem = useMemo(() => {
+    if (!value.trim()) return null;
+    const name = value.split("?")[0]?.split("/").pop() || "当前附件";
+    return {
+      url: value,
+      origin_name: name,
+    };
+  }, [value]);
+
+  const canPreviewValue = valuePreviewItem ? isPreviewableAttachment(valuePreviewItem) : false;
 
   const actionBtnCls = isDark
     ? "inline-flex items-center gap-1 rounded-md border border-[#47484d] px-3 py-2 text-[11px] text-white/90 hover:border-[#d16d41] disabled:opacity-50"
@@ -363,16 +403,29 @@ export function AttachmentPicker({
 
         <div className="flex flex-wrap items-center gap-2">
           {previewUrl ? (
-            <AttachmentImage
-              url={value}
-              alt="预览"
-              className={`h-14 w-14 shrink-0 rounded-lg border object-cover ${
-                isDark ? "border-[#47484d]" : "border-border"
-              }`}
-              fallbackClassName={`h-14 w-14 shrink-0 rounded-lg border ${
-                isDark ? "border-[#47484d]" : "border-border"
-              }`}
-            />
+            <div className="relative">
+              <AttachmentThumbnail
+                item={{ url: value, origin_name: valuePreviewItem?.origin_name }}
+                className={`h-14 w-14 shrink-0 rounded-lg border ${
+                  isDark ? "border-[#47484d]" : "border-border"
+                }`}
+                fallbackClassName={`h-14 w-14 shrink-0 rounded-lg border ${
+                  isDark ? "border-[#47484d]" : "border-border"
+                }`}
+                interactive={canPreviewValue}
+                onClick={canPreviewValue ? () => setValuePreviewOpen(true) : undefined}
+              />
+              {canPreviewValue ? (
+                <button
+                  type="button"
+                  aria-label="预览当前附件"
+                  className="absolute -right-1 -top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/75"
+                  onClick={() => setValuePreviewOpen(true)}
+                >
+                  <Eye size={11} />
+                </button>
+              ) : null}
+            </div>
           ) : (
             <div
               className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed ${
@@ -450,6 +503,13 @@ export function AttachmentPicker({
           setError("");
         }}
         scope={scope}
+      />
+
+      <AttachmentPreviewModal
+        item={valuePreviewItem}
+        open={valuePreviewOpen}
+        onClose={() => setValuePreviewOpen(false)}
+        showOwner={false}
       />
     </>
   );

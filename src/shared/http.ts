@@ -249,6 +249,25 @@ export function createHttpClient(defaults: HttpClientDefaults = {}) {
       }
 
       return parsedBody as T;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        throw err;
+      }
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new ApiError("上传超时，请检查网络或尝试更小的文件", 0, undefined, url, requestInit.method);
+      }
+      if (err instanceof TypeError) {
+        throw new ApiError(
+          normalizedBody instanceof FormData
+            ? "上传失败：连接被中断，可能是文件超过服务器大小限制"
+            : "网络连接失败，请检查服务是否可达",
+          0,
+          undefined,
+          url,
+          requestInit.method,
+        );
+      }
+      throw err;
     } finally {
       cleanup();
     }

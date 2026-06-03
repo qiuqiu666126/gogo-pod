@@ -1,5 +1,6 @@
 import {
   IMAGE_FILE_TYPE,
+  estimateUploadTimeoutMs,
   type AttachmentDto,
   type AttachmentListDto,
   type AttachmentListParams,
@@ -7,6 +8,7 @@ import {
 export {
   formatAttachmentMeta,
   formatAttachmentOwner,
+  formatAttachmentSize,
   formatAttachmentTime,
   resolveAttachmentUrl,
   type AttachmentDto,
@@ -44,6 +46,7 @@ export async function uploadAttachment(file: File): Promise<AttachmentDto> {
   formData.append("file", file);
   return adminHttp.post<AttachmentDto>("/admin/attachment/upload", formData, {
     fallbackMessage: "上传附件失败",
+    timeoutMs: estimateUploadTimeoutMs(file.size),
   });
 }
 

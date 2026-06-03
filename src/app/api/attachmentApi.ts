@@ -1,6 +1,7 @@
 import { appHttp } from "./apiClient";
 import {
   IMAGE_FILE_TYPE,
+  estimateUploadTimeoutMs,
   type AttachmentDto,
   type AttachmentListDto,
   type AttachmentListParams,
@@ -9,6 +10,7 @@ import {
 export {
   formatAttachmentMeta,
   formatAttachmentOwner,
+  formatAttachmentSize,
   formatAttachmentTime,
   resolveAttachmentUrl,
   type AttachmentDto,
@@ -37,6 +39,7 @@ export async function uploadMyAttachment(file: File): Promise<AttachmentDto> {
   return appHttp.post<AttachmentDto>("/api/v1/attachment/upload", formData, {
     assertSuccess: true,
     fallbackMessage: "上传附件失败",
+    timeoutMs: estimateUploadTimeoutMs(file.size),
   });
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Search, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Loader2, Search, Trash2, Upload } from "lucide-react";
 import {
   batchDeleteAttachments,
   deleteAttachment,
@@ -10,9 +10,12 @@ import type { AttachmentDto, AttachmentOwnerScope } from "../../shared/attachmen
 import {
   formatAttachmentMeta,
   formatAttachmentTime,
+  isPreviewableAttachment,
+  isVideoAttachment,
 } from "../../shared/attachmentUtils";
 import { AdminShell } from "../components/AdminShell";
-import { AttachmentImage } from "../components/AttachmentImage";
+import { AttachmentPreviewModal } from "../components/AttachmentPreviewModal";
+import { AttachmentThumbnail } from "../components/AttachmentThumbnail";
 import { Badge, Btn, Card, inputCls } from "../components/ui";
 
 const PAGE_SIZE = 20;
@@ -30,6 +33,7 @@ export function AttachmentsPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [previewItem, setPreviewItem] = useState<AttachmentDto | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -123,7 +127,8 @@ export function AttachmentsPage() {
 
   const statsText = useMemo(() => {
     const imageCount = items.filter((item) => item.is_image).length;
-    return `本页 ${items.length} 项，其中图片 ${imageCount} 项`;
+    const videoCount = items.filter((item) => isVideoAttachment(item)).length;
+    return `本页 ${items.length} 项，其中图片 ${imageCount} 项、视频 ${videoCount} 项`;
   }, [items]);
 
   return (
@@ -171,6 +176,7 @@ export function AttachmentsPage() {
             >
               <option value="">全部类型</option>
               <option value="image">全部图片</option>
+              <option value="video">全部视频</option>
               <option value="png">PNG</option>
               <option value="jpg">JPG</option>
               <option value="jpeg">JPEG</option>
@@ -260,18 +266,17 @@ export function AttachmentsPage() {
                         />
                       </td>
                       <td className="px-4 py-3 align-top">
-                        {item.is_image ? (
-                          <AttachmentImage
-                            url={item.url}
-                            alt={item.origin_name}
-                            className="h-14 w-14 rounded-lg border border-border object-cover"
-                            fallbackClassName="h-14 w-14 rounded-lg border border-border"
-                          />
-                        ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-muted/30 text-muted-foreground">
-                            <FolderOpen size={18} />
-                          </div>
-                        )}
+                        <AttachmentThumbnail
+                          item={item}
+                          className="h-14 w-14 rounded-lg border border-border"
+                          fallbackClassName="h-14 w-14 rounded-lg border border-border"
+                          interactive={isPreviewableAttachment(item)}
+                          onClick={
+                            isPreviewableAttachment(item)
+                              ? () => setPreviewItem(item)
+                              : undefined
+                          }
+                        />
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="font-medium text-foreground">{item.origin_name}</div>
@@ -297,14 +302,26 @@ export function AttachmentsPage() {
                         {formatAttachmentTime(item.created_at)}
                       </td>
                       <td className="px-4 py-3 align-top text-right">
-                        <button
-                          type="button"
-                          className="text-[12px] text-destructive hover:underline disabled:opacity-50"
-                          disabled={deleting}
-                          onClick={() => void handleDeleteOne(item.id)}
-                        >
-                          删除
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          {isPreviewableAttachment(item) ? (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-[12px] text-primary hover:underline"
+                              onClick={() => setPreviewItem(item)}
+                            >
+                              <Eye size={13} />
+                              预览
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="text-[12px] text-destructive hover:underline disabled:opacity-50"
+                            disabled={deleting}
+                            onClick={() => void handleDeleteOne(item.id)}
+                          >
+                            删除
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -337,6 +354,12 @@ export function AttachmentsPage() {
             </div>
           </div>
         </Card>
+
+        <AttachmentPreviewModal
+          item={previewItem}
+          open={Boolean(previewItem)}
+          onClose={() => setPreviewItem(null)}
+        />
       </div>
     </AdminShell>
   );
