@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, UserPlus } from "lucide-react";
+import { KeyRound, Plus, Search, UserPlus } from "lucide-react";
 import {
   createFrontUser,
+  deleteFrontUser,
   getAdminUserList,
   getAdminUserStats,
+  resetFrontUserPassword,
+  updateFrontUser,
+  updateFrontUserStatus,
   type CreateFrontUserBody,
   type AdminUserStatsResponse,
   type FrontUserInfo,
@@ -69,6 +73,20 @@ function roleText(user: FrontUserInfo) {
   return names.length ? names.join("、") : "-";
 }
 
+function userToForm(user: FrontUserInfo): CreateFrontUserBody {
+  return {
+    username: user.username ?? "",
+    nickname: user.nickname ?? "",
+    password: "",
+    email: user.email ?? "",
+    phone: user.phone ?? "",
+    role_code: user.role?.code ?? user.roles?.[0]?.code ?? "FrontMember",
+    plan: user.plan || "professional",
+    status: user.status || 1,
+    remark: user.remark ?? "",
+  };
+}
+
 function statValue(stats: AdminUserStatsResponse, keys: Array<keyof AdminUserStatsResponse>) {
   for (const key of keys) {
     const value = stats[key];
@@ -88,9 +106,16 @@ export function UsersPage() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<FrontUserInfo | null>(null);
   const [createForm, setCreateForm] = useState<CreateFrontUserBody>(emptyCreateForm);
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [resetUser, setResetUser] = useState<FrontUserInfo | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [actionUserId, setActionUserId] = useState<number | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -149,12 +174,27 @@ export function UsersPage() {
   }, [keyword, page, reloadKey, status]);
 
   const openCreateModal = () => {
+    setEditingUser(null);
     setCreateForm(emptyCreateForm());
     setCreateError("");
     setModalOpen(true);
   };
 
-  const submitCreate = async () => {
+  const openEditModal = (user: FrontUserInfo) => {
+    setEditingUser(user);
+    setCreateForm(userToForm(user));
+    setCreateError("");
+    setModalOpen(true);
+  };
+
+  const openResetPasswordModal = (user: FrontUserInfo) => {
+    setResetUser(user);
+    setResetPassword("");
+    setResetPasswordConfirm("");
+    setResetError("");
+  };
+
+  const submitUser = async () => {
     const token = getAdminAccessToken();
     if (!token) {
       setCreateError("登录状态已失效，请重新登录");
@@ -168,7 +208,7 @@ export function UsersPage() {
       setCreateError("请填写昵称");
       return;
     }
-    if (!createForm.password || createForm.password.length < 6) {
+    if (!editingUser && (!createForm.password || createForm.password.length < 6)) {
       setCreateError("密码至少 6 位");
       return;
     }
@@ -176,23 +216,104 @@ export function UsersPage() {
     setCreating(true);
     setCreateError("");
     try {
-      await createFrontUser(
-        {
-          ...createForm,
-          username: createForm.username.trim(),
-          nickname: createForm.nickname.trim(),
-          email: createForm.email.trim(),
-          phone: createForm.phone.trim(),
-          remark: createForm.remark.trim(),
-        },
-      );
+      const body = {
+        username: createForm.username.trim(),
+        nickname: createForm.nickname.trim(),
+        email: createForm.email.trim(),
+        phone: createForm.phone.trim(),
+        role_code: createForm.role_code,
+        plan: createForm.plan,
+        status: createForm.status,
+        remark: createForm.remark.trim(),
+      };
+
+      if (editingUser) {
+        await updateFrontUser(editingUser.id, body);
+      } else {
+        await createFrontUser({
+          ...body,
+          password: createForm.password,
+        });
+      }
       setModalOpen(false);
-      setPage(1);
+      if (!editingUser) setPage(1);
       reloadList();
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "创建用户失败");
+      setCreateError(
+        err instanceof Error ? err.message : editingUser ? "编辑用户失败" : "创建用户失败",
+      );
     } finally {
       setCreating(false);
+    }
+  };
+
+  const submitResetPassword = async () => {
+    const token = getAdminAccessToken();
+    if (!token) {
+      setResetError("登录状态已失效，请重新登录");
+      return;
+    }
+    if (!resetUser) return;
+    if (resetPassword.length < 6) {
+      setResetError("密码至少 6 位");
+      return;
+    }
+    if (resetPassword !== resetPasswordConfirm) {
+      setResetError("两次输入的密码不一致");
+      return;
+    }
+
+    setResetting(true);
+    setResetError("");
+    try {
+      await resetFrontUserPassword(resetUser.id, {
+        password: resetPassword,
+        password_confirmation: resetPasswordConfirm,
+      });
+      setResetUser(null);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "重置用户密码失败");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: FrontUserInfo) => {
+    const token = getAdminAccessToken();
+    if (!token) {
+      setError("登录状态已失效，请重新登录");
+      return;
+    }
+    if (!confirm(`确定删除账号「${displayName(user)}」？`)) return;
+
+    setActionUserId(user.id);
+    setError("");
+    try {
+      await deleteFrontUser(user.id);
+      reloadList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "删除用户失败");
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const handleToggleStatus = async (user: FrontUserInfo) => {
+    const token = getAdminAccessToken();
+    if (!token) {
+      setError("登录状态已失效，请重新登录");
+      return;
+    }
+
+    setActionUserId(user.id);
+    setError("");
+    try {
+      await updateFrontUserStatus(user.id, user.status === 1 ? 2 : 1);
+      reloadList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "更新用户状态失败");
+    } finally {
+      setActionUserId(null);
     }
   };
 
@@ -297,26 +418,38 @@ export function UsersPage() {
                       <button
                         type="button"
                         className="text-primary text-[12px] font-medium disabled:opacity-40"
-                        disabled
-                        title="待接入编辑用户接口"
+                        disabled={actionUserId === user.id}
+                        onClick={() => openEditModal(user)}
                       >
                         编辑
                       </button>
                       <button
                         type="button"
-                        className="text-[12px] font-medium text-muted-foreground disabled:opacity-40"
-                        disabled
-                        title="待接入重置密码接口"
+                        className="text-[12px] font-medium disabled:opacity-40"
+                        disabled={actionUserId === user.id || resetting}
+                        onClick={() => openResetPasswordModal(user)}
                       >
                         重置密码
                       </button>
                       <button
                         type="button"
                         className="text-[12px] font-medium disabled:opacity-40"
-                        disabled
-                        title="待接入启停用户接口"
+                        disabled={actionUserId === user.id}
+                        onClick={() => void handleToggleStatus(user)}
                       >
-                        {user.status === 1 ? "停用" : "启用"}
+                        {actionUserId === user.id
+                          ? "处理中"
+                          : user.status === 1
+                            ? "停用"
+                            : "启用"}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-destructive text-[12px] font-medium disabled:opacity-40"
+                        disabled={actionUserId === user.id}
+                        onClick={() => void handleDeleteUser(user)}
+                      >
+                        删除
                       </button>
                     </td>
                   </tr>
@@ -366,7 +499,7 @@ export function UsersPage() {
           <div className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="px-5 py-4 border-b border-border font-semibold flex items-center gap-2">
               <Plus size={18} className="text-primary" />
-              开设前台用户
+              {editingUser ? "编辑前台用户" : "开设前台用户"}
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -389,16 +522,18 @@ export function UsersPage() {
                   />
                 </Field>
               </div>
-              <Field label="登录密码">
-                <input
-                  type="password"
-                  className={inputCls}
-                  value={createForm.password}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, password: e.target.value })
-                  }
-                />
-              </Field>
+              {!editingUser && (
+                <Field label="登录密码">
+                  <input
+                    type="password"
+                    className={inputCls}
+                    value={createForm.password}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, password: e.target.value })
+                    }
+                  />
+                </Field>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="邮箱">
                   <input
@@ -474,8 +609,53 @@ export function UsersPage() {
               >
                 取消
               </Btn>
-              <Btn disabled={creating} onClick={() => void submitCreate()}>
-                {creating ? "创建中..." : "保存"}
+              <Btn disabled={creating} onClick={() => void submitUser()}>
+                {creating ? (editingUser ? "保存中..." : "创建中...") : "保存"}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border shadow-xl">
+            <div className="px-5 py-4 border-b border-border font-semibold flex items-center gap-2">
+              <KeyRound size={18} className="text-primary" />
+              重置密码
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-[13px] text-muted-foreground">
+                正在为账号「{displayName(resetUser)}」重置登录密码。
+              </p>
+              <Field label="新密码">
+                <input
+                  type="password"
+                  className={inputCls}
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                />
+              </Field>
+              <Field label="确认密码">
+                <input
+                  type="password"
+                  className={inputCls}
+                  value={resetPasswordConfirm}
+                  onChange={(e) => setResetPasswordConfirm(e.target.value)}
+                />
+              </Field>
+              {resetError && <p className="text-[13px] text-destructive">{resetError}</p>}
+            </div>
+            <div className="px-5 py-4 border-t border-border flex justify-end gap-2">
+              <Btn
+                variant="secondary"
+                disabled={resetting}
+                onClick={() => setResetUser(null)}
+              >
+                取消
+              </Btn>
+              <Btn disabled={resetting} onClick={() => void submitResetPassword()}>
+                {resetting ? "提交中..." : "确认重置"}
               </Btn>
             </div>
           </div>

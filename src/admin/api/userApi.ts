@@ -57,6 +57,13 @@ export type CreateFrontUserBody = {
   remark: string;
 };
 
+export type UpdateFrontUserBody = Omit<CreateFrontUserBody, "password">;
+
+export type ResetFrontUserPasswordBody = {
+  password: string;
+  password_confirmation: string;
+};
+
 export async function getAdminUserList(
   params: AdminUserListParams,
 ): Promise<AdminUserListResponse> {
@@ -90,5 +97,40 @@ export async function createFrontUser(
 ): Promise<unknown> {
   return adminHttp.post<unknown>("/admin/front-user", body, {
     fallbackMessage: "创建用户失败",
+  });
+}
+
+export async function updateFrontUser(
+  id: number,
+  body: UpdateFrontUserBody,
+): Promise<unknown> {
+  return adminHttp.put<unknown>(`/admin/front-user/${id}`, body, {
+    fallbackMessage: "编辑用户失败",
+  });
+}
+
+export async function deleteFrontUser(id: number): Promise<unknown> {
+  return adminHttp.delete<unknown>(`/admin/front-user/${id}`, {
+    fallbackMessage: "删除用户失败",
+  });
+}
+
+export async function updateFrontUserStatus(
+  id: number,
+  status: number,
+): Promise<unknown> {
+  return adminHttp.patch<unknown>(
+    `/admin/front-user/${id}/status`,
+    { status },
+    { fallbackMessage: "更新用户状态失败" },
+  );
+}
+
+export async function resetFrontUserPassword(
+  id: number,
+  body: ResetFrontUserPasswordBody,
+): Promise<unknown> {
+  return adminHttp.put<unknown>(`/admin/front-user/${id}/password`, body, {
+    fallbackMessage: "重置用户密码失败",
   });
 }
