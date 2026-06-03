@@ -1,6 +1,6 @@
 import { http } from "../../shared/http";
 import type { FormControl } from "../../shared/sceneFormSchema";
-import { assertSuccess, authHeaders, type AdminApiResponse } from "./adminApi";
+import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
 
 export type WorkflowStepSummaryDto = {
   featureCode: string;
@@ -119,7 +119,7 @@ export async function listWorkflowTemplates(
   const res = await http.get<AdminApiResponse<WorkflowTemplateListDto>>(
     "/admin/ai-workflow-template/list",
     {
-      headers: authHeaders(accessToken),
+      headers: await getAdminAuthHeaders(),
       query: {
         category_code: params.category_code,
         enabled: params.enabled,
@@ -137,7 +137,7 @@ export async function getWorkflowTemplateMeta(
 ): Promise<WorkflowTemplateMetaDto> {
   const res = await http.get<AdminApiResponse<WorkflowTemplateMetaDto>>(
     "/admin/ai-workflow-template/meta",
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取工作流元数据失败");
 }
@@ -149,7 +149,7 @@ export async function getWorkflowStepOptions(
   const res = await http.get<AdminApiResponse<WorkflowStepOptionsDto>>(
     "/admin/ai-workflow-template/step-options",
     {
-      headers: authHeaders(accessToken),
+      headers: await getAdminAuthHeaders(),
       query: { feature_code: featureCode },
     },
   );
@@ -162,7 +162,7 @@ export async function getWorkflowStepSchema(
 ): Promise<WorkflowStepSchemaDto> {
   const res = await http.get<AdminApiResponse<WorkflowStepSchemaDto>>(
     `/admin/ai-workflow-template/step-schema/${scenePresetId}`,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取节点控件配置失败");
 }
@@ -173,7 +173,7 @@ export async function getWorkflowTemplateDetail(
 ): Promise<WorkflowTemplateDetailDto> {
   const res = await http.get<AdminApiResponse<WorkflowTemplateDetailDto>>(
     `/admin/ai-workflow-template/${id}`,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取工作流模版详情失败");
 }
@@ -185,7 +185,7 @@ export async function createWorkflowTemplate(
   const res = await http.post<AdminApiResponse<WorkflowTemplateDetailDto>>(
     "/admin/ai-workflow-template",
     payload,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "创建工作流模版失败");
 }
@@ -198,7 +198,7 @@ export async function updateWorkflowTemplate(
   const res = await http.put<AdminApiResponse<WorkflowTemplateDetailDto>>(
     `/admin/ai-workflow-template/${id}`,
     payload,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "保存工作流模版失败");
 }
@@ -206,7 +206,7 @@ export async function updateWorkflowTemplate(
 export async function deleteWorkflowTemplate(id: number, accessToken: string): Promise<void> {
   const res = await http.delete<AdminApiResponse<unknown>>(
     `/admin/ai-workflow-template/${id}`,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   assertSuccess(res, "删除工作流模版失败");
 }

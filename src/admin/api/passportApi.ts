@@ -63,6 +63,16 @@ export async function loginAdmin(payload: AdminLoginPayload): Promise<AdminLogin
   return assertSuccess(res, "登录失败");
 }
 
+export async function refreshAdminToken(refreshToken: string): Promise<AdminLoginData> {
+  const res = await http.post<AdminApiResponse<AdminLoginData>>(
+    "/admin/passport/refresh",
+    undefined,
+    { headers: authHeaders(refreshToken) },
+  );
+
+  return assertSuccess(res, "刷新登录状态失败");
+}
+
 export async function getAdminInfo(accessToken: string): Promise<AdminUserInfo> {
   const res = await http.get<AdminApiResponse<AdminUserInfo>>(
     "/admin/passport/getInfo",

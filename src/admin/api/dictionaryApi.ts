@@ -1,5 +1,5 @@
 import { http } from "../../shared/http";
-import { assertSuccess, authHeaders, type AdminApiResponse } from "./adminApi";
+import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
 
 export type DictionaryOption = {
   label: string;
@@ -13,7 +13,7 @@ export async function getAllDictionaries(
 ): Promise<Record<string, DictionaryOption[]>> {
   const res = await http.get<AdminApiResponse<Record<string, DictionaryOption[]>>>(
     "/admin/data_center/getAllDictionary",
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取数据字典失败");
 }

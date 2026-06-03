@@ -1,4 +1,5 @@
 import { http } from "../../shared/http";
+import { getAdminAuthHeaders } from "./adminApi";
 
 export type AdminUserListParams = {
   page: number;
@@ -65,12 +66,6 @@ type MaybeWrappedResponse<T> =
       data: T;
     };
 
-function authHeaders(accessToken: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-  };
-}
-
 function unwrapResponse<T>(res: MaybeWrappedResponse<T>, fallbackMessage: string): T {
   if (res && typeof res === "object" && "code" in res && "data" in res) {
     if (res.code !== 200) {
@@ -88,7 +83,7 @@ export async function getAdminUserList(
   const res = await http.get<MaybeWrappedResponse<AdminUserListResponse>>(
     "/admin/front-user/list",
     {
-      headers: authHeaders(accessToken),
+      headers: await getAdminAuthHeaders(),
       query: {
         page: params.page,
         page_size: params.page_size,
@@ -108,7 +103,7 @@ export async function getAdminUserStats(
   const res = await http.get<MaybeWrappedResponse<AdminUserStatsResponse>>(
     "/admin/front-user/stats",
     {
-      headers: authHeaders(accessToken),
+      headers: await getAdminAuthHeaders(),
       query: {
         page: params.page,
         page_size: params.page_size,
@@ -128,7 +123,7 @@ export async function createFrontUser(
   const res = await http.post<MaybeWrappedResponse<unknown>>(
     "/admin/front-user",
     body,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
 
   return unwrapResponse(res, "创建用户失败");

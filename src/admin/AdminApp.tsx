@@ -1,7 +1,13 @@
 import { useEffect } from "react";
 import { getAdminInfo } from "./api/passportApi";
 import { useAdminStore } from "./store";
-import { clearAdminSession, reloadAdminAiData, setAdminUser } from "./store";
+import {
+  clearAdminSession,
+  clearAdminTokenRefreshTimer,
+  ensureAdminAccessToken,
+  reloadAdminAiData,
+  setAdminUser,
+} from "./store";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FeatureDetailPage } from "./pages/FeatureDetailPage";
@@ -21,7 +27,8 @@ export function AdminApp() {
     if (!authed || !adminAuth?.accessToken || adminUser) return;
     let cancelled = false;
 
-    void getAdminInfo(adminAuth.accessToken)
+    void ensureAdminAccessToken()
+      .then((token) => getAdminInfo(token))
       .then((user) => {
         if (!cancelled) setAdminUser(user);
       })
@@ -33,6 +40,12 @@ export function AdminApp() {
       cancelled = true;
     };
   }, [authed, adminAuth?.accessToken, adminUser]);
+
+  useEffect(() => {
+    if (!authed) {
+      clearAdminTokenRefreshTimer();
+    }
+  }, [authed]);
 
   useEffect(() => {
     if (!authed || !adminAuth?.accessToken) return;

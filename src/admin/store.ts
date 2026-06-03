@@ -5,6 +5,7 @@ import {
   INITIAL_TASKS,
 } from "./data/initialData";
 import type { AdminLoginData, AdminUserInfo } from "./api/passportApi";
+import { refreshAdminToken } from "./api/passportApi";
 import {
   getAiFunctionDetail,
   listAiFunctions,
@@ -32,10 +33,19 @@ reloadFrontendUsers();
 const ADMIN_AUTH_KEY = "pod_admin_auth";
 const ADMIN_USER_KEY = "pod_admin_user";
 
+/** access_token 过期前多久主动刷新（毫秒） */
+const REFRESH_BEFORE_MS = 5 * 60 * 1000;
+
+let refreshInFlight: Promise<string> | null = null;
+let refreshTimerId: number | undefined;
+
 let configs: FeatureConfig[] = [];
 let presets: FeaturePreset[] = [];
 let tasks = structuredClone(INITIAL_TASKS);
 let adminAuth = loadAdminAuth();
+if (adminAuth) {
+  scheduleAdminTokenRefresh();
+}
 let adminUser = loadAdminUser();
 let authed = Boolean(adminAuth?.accessToken);
 let activeNav: NavId = "dashboard";
@@ -45,10 +55,84 @@ let featuresError = "";
 let scenePresetsLoading = false;
 let scenePresetsError = "";
 
+function buildAuthSession(data: AdminLoginData): AdminAuthSession {
+  const expireAt = Number(data.expire_at) || 0;
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expireAt,
+    expiresAtMs: Date.now() + expireAt * 1000,
+  };
+}
+
+function applyAuthSession(session: AdminAuthSession) {
+  adminAuth = session;
+  saveAdminAuth(session);
+  authed = true;
+  scheduleAdminTokenRefresh();
+  emit();
+}
+
+export function scheduleAdminTokenRefresh() {
+  if (typeof window === "undefined" || !adminAuth?.refreshToken) return;
+  if (refreshTimerId !== undefined) {
+    window.clearTimeout(refreshTimerId);
+  }
+  const delay = Math.max(adminAuth.expiresAtMs - Date.now() - REFRESH_BEFORE_MS, 1000);
+  refreshTimerId = window.setTimeout(() => {
+    void ensureAdminAccessToken().catch(() => undefined);
+  }, delay);
+}
+
+export function clearAdminTokenRefreshTimer() {
+  if (typeof window !== "undefined" && refreshTimerId !== undefined) {
+    window.clearTimeout(refreshTimerId);
+    refreshTimerId = undefined;
+  }
+}
+
+export async function ensureAdminAccessToken(): Promise<string> {
+  if (!adminAuth?.accessToken) {
+    throw new Error("未登录");
+  }
+
+  const remaining = adminAuth.expiresAtMs - Date.now();
+  if (remaining > REFRESH_BEFORE_MS) {
+    return adminAuth.accessToken;
+  }
+
+  if (!adminAuth.refreshToken) {
+    clearAdminSession();
+    throw new Error("登录已过期，请重新登录");
+  }
+
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = refreshAdminToken(adminAuth.refreshToken)
+    .then((data) => {
+      applyAuthSession(buildAuthSession(data));
+      return adminAuth!.accessToken;
+    })
+    .catch((err) => {
+      clearAdminSession();
+      throw err;
+    })
+    .finally(() => {
+      refreshInFlight = null;
+    });
+
+  return refreshInFlight;
+}
+
 export type AdminAuthSession = {
   accessToken: string;
   refreshToken: string;
+  /** 后端返回的 access_token TTL（秒） */
   expireAt: number;
+  /** access_token 绝对过期时间戳（毫秒） */
+  expiresAtMs: number;
 };
 
 type AdminSnapshot = {
@@ -140,6 +224,10 @@ function loadAdminAuth(): AdminAuthSession | null {
       accessToken: parsed.accessToken,
       refreshToken: parsed.refreshToken ?? "",
       expireAt: Number(parsed.expireAt) || 0,
+      expiresAtMs:
+        typeof parsed.expiresAtMs === "number" && parsed.expiresAtMs > 0
+          ? parsed.expiresAtMs
+          : 0,
     };
   } catch {
     localStorage.removeItem(ADMIN_AUTH_KEY);
@@ -177,18 +265,12 @@ function saveAdminUser(user: AdminUserInfo | null) {
 }
 
 export function login(session: AdminLoginData, user?: AdminUserInfo | null) {
-  adminAuth = {
-    accessToken: session.access_token,
-    refreshToken: session.refresh_token,
-    expireAt: session.expire_at,
-  };
+  applyAuthSession(buildAuthSession(session));
   if (user !== undefined) {
     adminUser = user;
     saveAdminUser(user);
+    emit();
   }
-  saveAdminAuth(adminAuth);
-  authed = true;
-  emit();
 }
 
 export function setAdminUser(user: AdminUserInfo | null) {
@@ -198,6 +280,8 @@ export function setAdminUser(user: AdminUserInfo | null) {
 }
 
 export function clearAdminSession() {
+  clearAdminTokenRefreshTimer();
+  refreshInFlight = null;
   adminAuth = null;
   adminUser = null;
   saveAdminAuth(null);
@@ -210,6 +294,10 @@ export const logout = clearAdminSession;
 
 export function getAdminAccessToken() {
   return adminAuth?.accessToken ?? "";
+}
+
+export function getAdminRefreshToken() {
+  return adminAuth?.refreshToken ?? "";
 }
 
 export function setActiveNav(nav: NavId) {
@@ -227,8 +315,12 @@ export function getFeatureConfig(type: FeatureType): FeatureConfig | undefined {
 }
 
 export async function reloadAdminAiData() {
-  const token = getAdminAccessToken();
-  if (!token) return;
+  let token: string;
+  try {
+    token = await ensureAdminAccessToken();
+  } catch {
+    return;
+  }
 
   featuresLoading = true;
   scenePresetsLoading = true;
@@ -258,10 +350,7 @@ export async function reloadAdminAiData() {
 }
 
 export async function fetchFeatureConfigDetail(type: FeatureType): Promise<FeatureConfig> {
-  const token = getAdminAccessToken();
-  if (!token) {
-    throw new Error("未登录");
-  }
+  const token = await ensureAdminAccessToken();
   const detail = await getAiFunctionDetail(type, token);
   const mapped = mapAiFunctionDetailToConfig(detail);
   configs = configs.map((c) => (c.featureType === type ? mapped : c));
@@ -273,10 +362,7 @@ export async function persistFeatureConfig(
   type: FeatureType,
   patch: Partial<FeatureConfig>,
 ): Promise<FeatureConfig> {
-  const token = getAdminAccessToken();
-  if (!token) {
-    throw new Error("未登录");
-  }
+  const token = await ensureAdminAccessToken();
 
   const current = getFeatureConfig(type);
   const merged = { ...(current ?? {}), ...patch, featureType: type } as FeatureConfig;

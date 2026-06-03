@@ -1,7 +1,7 @@
 import { http } from "../../shared/http";
 import type { FormControl } from "../../shared/sceneFormSchema";
 import type { FeatureType } from "../types";
-import { assertSuccess, authHeaders, type AdminApiResponse } from "./adminApi";
+import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
 
 export type AiScenePresetSummaryDto = {
   db_id: number;
@@ -58,7 +58,7 @@ export async function listAiScenePresets(
   accessToken: string,
 ): Promise<AiScenePresetListDto> {
   const res = await http.get<AdminApiResponse<AiScenePresetListDto>>("/admin/ai-scene-preset/list", {
-    headers: authHeaders(accessToken),
+    headers: await getAdminAuthHeaders(),
     query: {
       feature_code: params.feature_code,
       enabled: params.enabled,
@@ -74,7 +74,7 @@ export async function getAiScenePresetDetail(
 ): Promise<AiScenePresetDetailDto> {
   const res = await http.get<AdminApiResponse<AiScenePresetDetailDto>>(
     `/admin/ai-scene-preset/${dbId}`,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取场景预设详情失败");
 }
@@ -86,7 +86,7 @@ export async function createAiScenePreset(
   const res = await http.post<AdminApiResponse<AiScenePresetDetailDto>>(
     "/admin/ai-scene-preset",
     payload,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "创建场景预设失败");
 }
@@ -99,14 +99,14 @@ export async function updateAiScenePreset(
   const res = await http.put<AdminApiResponse<AiScenePresetDetailDto>>(
     `/admin/ai-scene-preset/${dbId}`,
     payload,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "保存场景预设失败");
 }
 
 export async function deleteAiScenePreset(dbId: number, accessToken: string): Promise<void> {
   const res = await http.delete<AdminApiResponse<unknown>>(`/admin/ai-scene-preset/${dbId}`, {
-    headers: authHeaders(accessToken),
+    headers: await getAdminAuthHeaders(),
   });
   assertSuccess(res, "删除场景预设失败");
 }

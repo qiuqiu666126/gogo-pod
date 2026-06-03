@@ -1,6 +1,6 @@
 import { http } from "../../shared/http";
 import type { FeatureCategory, FeatureType } from "../types";
-import { assertSuccess, authHeaders, type AdminApiResponse } from "./adminApi";
+import { assertSuccess, authHeaders, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
 
 export type AiFunctionSummaryDto = {
   id: number;
@@ -47,14 +47,14 @@ export type AiFunctionSavePayload = {
 
 export async function listAiFunctions(accessToken: string): Promise<AiFunctionSummaryDto[]> {
   const res = await http.get<AdminApiResponse<AiFunctionSummaryDto[]>>("/admin/ai-function/list", {
-    headers: authHeaders(accessToken),
+    headers: await getAdminAuthHeaders(),
   });
   return assertSuccess(res, "获取 AI 功能列表失败");
 }
 
 export async function getAiFunctionMeta(accessToken: string): Promise<AiFunctionMetaDto> {
   const res = await http.get<AdminApiResponse<AiFunctionMetaDto>>("/admin/ai-function/meta", {
-    headers: authHeaders(accessToken),
+    headers: await getAdminAuthHeaders(),
   });
   return assertSuccess(res, "获取 AI 功能元数据失败");
 }
@@ -65,7 +65,7 @@ export async function getAiFunctionDetail(
 ): Promise<AiFunctionDetailDto> {
   const res = await http.get<AdminApiResponse<AiFunctionDetailDto>>(
     `/admin/ai-function/${encodeURIComponent(code)}`,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "获取 AI 功能详情失败");
 }
@@ -78,7 +78,7 @@ export async function saveAiFunction(
   const res = await http.put<AdminApiResponse<AiFunctionDetailDto>>(
     `/admin/ai-function/${encodeURIComponent(code)}`,
     payload,
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "保存 AI 功能配置失败");
 }
@@ -91,7 +91,7 @@ export async function updateAiFunctionStatus(
   const res = await http.patch<AdminApiResponse<AiFunctionDetailDto>>(
     `/admin/ai-function/${encodeURIComponent(code)}/status`,
     { enabled },
-    { headers: authHeaders(accessToken) },
+    { headers: await getAdminAuthHeaders() },
   );
   return assertSuccess(res, "更新 AI 功能状态失败");
 }

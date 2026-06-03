@@ -1,4 +1,5 @@
 import { http } from "../../shared/http";
+import { getAdminAuthHeaders } from "./adminApi";
 
 export type RecommendCase = {
   id: number;
@@ -21,12 +22,6 @@ export type BackendRecommendCase = {
   video_url: string;
   sort: number;
 };
-
-function authHeaders(accessToken: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-  };
-}
 
 type ApiResponse<T> = {
   code: number;
@@ -77,7 +72,7 @@ export async function getRecommendCaseList(
   const res = await http.get<ApiResponse<BackendRecommendCase[]>>(
     "/admin/recommend-case/list",
     {
-      headers: authHeaders(accessToken),
+      headers: await getAdminAuthHeaders(),
       query,
     }
   );
@@ -93,7 +88,7 @@ export async function createRecommendCase(
   const res = await http.post<ApiResponse<BackendRecommendCase>>(
     "/admin/recommend-case/store",
     payload,
-    { headers: authHeaders(accessToken) }
+    { headers: await getAdminAuthHeaders() }
   );
   const data = unwrapResponse(res, "创建推荐案例失败");
   return mapFromBackend(data);
@@ -108,7 +103,7 @@ export async function updateRecommendCase(
   const res = await http.put<ApiResponse<BackendRecommendCase>>(
     `/admin/recommend-case/${id}`,
     payload,
-    { headers: authHeaders(accessToken) }
+    { headers: await getAdminAuthHeaders() }
   );
   const data = unwrapResponse(res, "修改推荐案例失败");
   return mapFromBackend(data);
@@ -120,7 +115,7 @@ export async function deleteRecommendCase(
 ): Promise<void> {
   const res = await http.delete<ApiResponse<unknown>>(
     `/admin/recommend-case/${id}`,
-    { headers: authHeaders(accessToken) }
+    { headers: await getAdminAuthHeaders() }
   );
   unwrapResponse(res, "删除推荐案例失败");
 }
