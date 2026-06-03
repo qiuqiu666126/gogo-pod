@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GOGO POD — 技术开发项目拆解表</title>
+  <style>
+    :root {
+      --bg: #0f1014;
+      --card: #181a20;
+      --border: #2a2d36;
+      --text: #e8eaed;
+      --muted: #9aa0ad;
+      --primary: #f26419;
+      --primary-dim: rgba(242, 100, 25, 0.12);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", "Noto Sans SC", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 32px 24px 80px; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+    h1 span { color: var(--primary); }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-proto { background: var(--warning); color: #000; }
+    .badge-ui { background: #1e3a5f; color: #bfdbfe; }
+    .badge-partial { background: #78350f; color: #fde68a; }
+    .badge-api { background: #14532d; color: #bbf7d0; }
+    .badge-mock { background: #374151; color: #d1d5db; }
+    .badge-todo { background: #7f1d1d; color: #fecaca; }
+    .badge-p0 { background: #7f1d1d; color: #fecaca; }
+    .badge-p1 { background: #78350f; color: #fde68a; }
+    .badge-p2 { background: #1e3a5f; color: #bfdbfe; }
+    .badge-p3 { background: #1f2937; color: #d1d5db; }
+    .badge-fe { background: #312e81; color: #c4b5fd; }
+    .badge-be { background: #14532d; color: #bbf7d0; }
+    .badge-ai { background: #581c87; color: #e9d5ff; }
+    .badge-infra { background: #374151; color: #e5e7eb; }
+    section { margin-bottom: 40px; }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--primary);
+    }
+    h3 { font-size: 15px; font-weight: 600; margin: 20px 0 10px; color: var(--muted); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .stat { text-align: center; padding: 16px; }
+    .stat .num { font-size: 28px; font-weight: 700; color: var(--primary); }
+    .stat .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #1e2128;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--muted);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:hover td { background: rgba(242, 100, 25, 0.04); }
+    .table-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    ul.compact { list-style: none; padding: 0; }
+    ul.compact li { padding: 4px 0; color: var(--muted); font-size: 13px; }
+    ul.compact li::before { content: "· "; color: var(--primary); }
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      background: #252830;
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #fbbf24;
+    }
+    .arch-diagram {
+      background: #12141a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      overflow-x: auto;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      white-space: pre;
+    }
+    .nav-tree { font-size: 13px; }
+    .nav-tree .l1 { font-weight: 600; color: var(--text); margin: 8px 0 4px; }
+    .nav-tree .l2 { padding-left: 16px; color: var(--muted); }
+    .nav-tree .l3 { padding-left: 32px; color: #6b7280; font-size: 12px; }
+    .note {
+      background: var(--primary-dim);
+      border: 1px solid rgba(242, 100, 25, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .file-ref { color: #60a5fa; font-size: 12px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    @media print {
+      body { background: #fff; color: #111; }
+      .card, th { background: #f5f5f5; }
+      :root { --border: #ccc; --text: #111; --muted: #555; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>GOGO<span>POD</span> 电商 AI 设计平台 — 技术开发项目拆解表</h1>
+      <div class="meta">
+        <span>文档版本：v2.0</span>
+        <span>更新日期：2026-05-29</span>
+        <span>代码库：<code>POD</code>（包名 <code>gogo-pod</code>）</span>
+        <span><span class="badge badge-partial">阶段：UI 原型 + 部分 API 联调</span></span>
+      </div>
+      <div class="note" style="margin-top:16px">
+        本文档基于 <code>POD</code> 仓库<strong>截至 2026-05-29</strong> 的实际代码拆解。前台用户端、管理后台、Express 后端已并行开发：作图/视频等 AI 任务在 DEV 下可调用 <code>/api/v1/tasks</code>，失败时回退本地 Mock；官方工作流/套图模板、前台用户账号经 <code>localStorage</code> 跨端同步；工作流可视化编排器、任务详情页、后台模版管理页等已落地 UI。尚未完成：后台 AI 配置与 Server SQLite 打通、工作流执行引擎、采集/刊登/下载等业务 API、真实 OSS 与专用图像/视频推理服务。
+      </div>
+      <div class="legend">
+        <span class="badge badge-ui">UI 已完成</span>
+        <span class="badge badge-partial">部分实现</span>
+        <span class="badge badge-api">已对接 API</span>
+        <span class="badge badge-mock">仅 Mock</span>
+        <span class="badge badge-todo">待开发</span>
+      </div>
+    </header>
+
+    <!-- 概览 -->
+    <section>
+      <h2>一、项目概览</h2>
+      <div class="grid-4">
+        <div class="card stat"><div class="num">8</div><div class="label">前台一级导航</div></div>
+        <div class="card stat"><div class="num">9</div><div class="label">后台管理页</div></div>
+        <div class="card stat"><div class="num">20+</div><div class="label">业务页面/子页</div></div>
+        <div class="card stat"><div class="num">18+</div><div class="label">任务/功能弹窗</div></div>
+        <div class="card stat"><div class="num">8</div><div class="label">AI 功能类型</div></div>
+        <div class="card stat"><div class="num">12</div><div class="label">Server 路由组</div></div>
+        <div class="card stat"><div class="num">3</div><div class="label">localStorage 共享域</div></div>
+        <div class="card stat"><div class="num">6</div><div class="label">已对接前台 API</div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>产品定位</h3>
+        <p style="color:var(--muted);margin-top:8px">
+          面向 POD（按需印刷）卖家的 AI 电商设计工作台：从<strong>竞品/店铺采集</strong> → <strong>印花提取/裂变/文生图/套图</strong> → <strong>多平台刊登上架</strong>，支持<strong>可视化工作流</strong>串联批量任务，覆盖服饰、手机壳、铁皮画、挂钟等品类。品牌统一为 <strong>GOGO POD</strong>。
+        </p>
+      </div>
+    </section>
+
+    <!-- 架构 -->
+    <section>
+      <h2>二、技术架构（现状）</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>前端（双入口）</h3>
+          <ul class="compact">
+            <li>框架：React 18 + TypeScript + Vite 6</li>
+            <li>用户端：<code>index.html</code> → <code>AppRoot.tsx</code> → <code>App.tsx</code></li>
+            <li>管理端：<code>admin.html</code> → <code>AdminApp.tsx</code>（<code>__POD_ADMIN__</code>）</li>
+            <li>导航：<code>useState(activeNav)</code>，未接入 react-router</li>
+            <li>样式：Tailwind + <code>theme.css</code>；组件 Radix UI / Lucide</li>
+            <li>开发代理：Vite <code>/api</code> → <code>127.0.0.1:8080</code></li>
+            <li>联调：<code>npm run dev:all</code>（seed + API + Web）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>后端（server/）</h3>
+          <ul class="compact">
+            <li>Express + TypeScript + SQLite（<code>pod.db</code>）</li>
+            <li>表：<code>feature_configs</code>、<code>feature_presets</code>、<code>tasks</code></li>
+            <li>任务执行：<code>taskRunner</code>（有 API Key 调 OpenAI 兼容 Chat；否则演示图）</li>
+            <li>上传：<code>POST /api/v1/upload/presign</code> 返回 <code>local://</code> 占位</li>
+            <li>管理 API：<code>/api/admin/v1/*</code>（Bearer <code>pod-admin-dev</code>）</li>
+            <li>种子：<code>npm run seed</code> → <code>server/src/seed.ts</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>数据持久化分层</h3>
+          <ul class="compact">
+            <li><strong>localStorage</strong>：前台用户、官方工作流模板、官方套图模板（<code>pod_*</code> 键，含旧键迁移）</li>
+            <li><strong>SQLite</strong>：功能配置、场景预设、任务记录（server）</li>
+            <li><strong>内存</strong>：功能任务列表、工作流任务、我的模板、商品库、后台 configs/presets、推荐案例</li>
+            <li><strong>割裂点</strong>：后台 UI 改配置不写 SQLite；前台 DEV 读 server 配置，与后台内存不同步</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>建议目标架构</h3>
+          <ul class="compact">
+            <li>React Router + TanStack Query + 统一任务 Store</li>
+            <li>Admin ↔ Server 配置单源；WebSocket 任务进度</li>
+            <li>OSS/S3 真实上传；专用图像/视频推理服务</li>
+            <li>工作流编排引擎 + 消息队列 Worker</li>
+            <li>JWT 用户体系替换 localStorage 明文密码</li>
+          </ul>
+        </div>
+      </div>
+      <div class="arch-diagram">┌──────────────────────────────────────────────────────────────────────────────┐
+│  浏览器 / Chrome 插件                                                          │
+└───────────────┬──────────────────────────────┬─────────────────────────────────┘
+                │                              │
+    ┌───────────▼──────────┐       ┌───────────▼──────────┐
+    │ 用户端 Web (React)    │       │ 管理后台 admin.html   │
+    │ App.tsx · 8 导航模块   │       │ AdminApp · 9 管理页   │
+    └───────────┬──────────┘       └───────────┬──────────┘
+                │         localStorage          │ 内存 store（未接 API）
+                │    pod_users / pod_templates  │
+                └──────────────┬────────────────┘
+                               │ /api/v1/*  (DEV 代理)
+                ┌──────────────▼──────────────┐
+                │  Express API :8080           │
+                │  config · tasks · upload     │
+                │  admin/v1 · text2img/reverse │
+                └──────────────┬──────────────┘
+                               │
+                ┌──────────────▼──────────────┐
+                │  SQLite pod.db               │
+                │  + 目标：OSS / AI Workers    │
+                └─────────────────────────────┘</div>
+    </section>
+
+    <!-- IA -->
+    <section>
+      <h2>三、站点信息架构（IA）</h2>
+      <div class="grid-2">
+        <div class="card nav-tree">
+          <div class="l1">用户端 — 全局壳层 App.tsx</div>
+          <div class="l2">登录门禁：FrontendLoginPage（AppRoot.tsx）</div>
+          <div class="l2">侧栏：首页 | 找图 | 作图 | 视频 | 上架 | 我的空间 | 任务中心 | 下载中心</div>
+          <div class="l2">顶栏（首页）：搜索 ⌘K · 通知 · 新建工作流</div>
+
+          <div class="l1">首页 workflow</div>
+          <div class="l3">欢迎区 · 快速开始 · 最近任务（taskCenterStore）· 推荐案例（硬编码）</div>
+          <div class="l3">WorkflowModal → WorkflowBuilderPage（全屏编排器）</div>
+          <div class="l3">WorkflowPage 列表 · WorkflowTemplatesPage 模板管理</div>
+
+          <div class="l1">找图 findimg — FindImagePage</div>
+          <div class="l3">数据采集：插件/店铺 Tab · 采集任务列表 CollectionTaskListContent</div>
+          <div class="l3">以图搜图：上传/空间选图 → 选平台 → 新开标签页跳转外链</div>
+
+          <div class="l1">作图 design — DesignPage</div>
+          <div class="l3">子页：印花提取 · 抠图 · 图裂变 · 文生图 · 商品套图 · 标题提取 · 矢量 · 侵权过滤</div>
+          <div class="l3">套图模板管理 ProductSetTemplatesPage</div>
+
+          <div class="l1">视频 video — VideoPage + VideoTaskModal</div>
+          <div class="l1">上架 publish — PublishPage（商品库 / 店铺 / 刊登模板）</div>
+          <div class="l1">我的空间 space — MySpacePage</div>
+          <div class="l1">任务中心 tasks — TaskCenterPage（功能 + 工作流任务聚合）</div>
+          <div class="l3">FeatureTaskDetailPage · WorkflowTaskDetailPage</div>
+          <div class="l1">下载中心 downloads — DownloadCenterPage（空态）</div>
+        </div>
+        <div class="card nav-tree">
+          <div class="l1">管理后台 — AdminShell 侧栏</div>
+          <div class="l2">概览 DashboardPage</div>
+          <div class="l2">AI 功能配置 FeatureDetailPage（模型/Key/提示词/参数映射）</div>
+          <div class="l2">场景预设 PresetsPage</div>
+          <div class="l2">推荐案例 RecommendationsPage</div>
+          <div class="l2">工作流模版 WorkflowTemplatesAdminPage（官方模板 + 可视化配置弹窗）</div>
+          <div class="l2">套图模版 ProductSetTemplatesAdminPage</div>
+          <div class="l2">用户账号 UsersPage（开设前台登录账号）</div>
+          <div class="l2">任务监控 TasksPage</div>
+          <div class="l2">系统设置 SettingsPage</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 前台文件映射 -->
+    <section>
+      <h2>四、用户端模块与实现状态</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>nav ID</th>
+              <th>源文件</th>
+              <th>子功能 / 弹窗</th>
+              <th>数据/API</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>登录</td><td>—</td>
+              <td class="file-ref">AppRoot.tsx, FrontendLoginPage.tsx</td>
+              <td>账号密码登录；DEV 可 skipLogin</td>
+              <td>shared/frontendUsers.ts → localStorage</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>应用壳层</td><td>—</td>
+              <td class="file-ref">App.tsx</td>
+              <td>侧栏、顶栏、WorkflowModal、全局 Modals、工作流全屏页</td>
+              <td>混合</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>首页</td><td>workflow</td>
+              <td class="file-ref">App.tsx</td>
+              <td>快速开始、最近任务、推荐玩法、PlayVideoModal</td>
+              <td>推荐硬编码；任务来自内存</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>工作流列表</td><td>workflow</td>
+              <td class="file-ref">WorkflowPage.tsx</td>
+              <td>任务列表、管理模板入口</td>
+              <td>workflowTasks.tsx 内存</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>工作流模板</td><td>workflow</td>
+              <td class="file-ref">WorkflowTemplatesPage.tsx</td>
+              <td>官方/团队/我的 Tab；查看/新建任务/副本/以此新建模版</td>
+              <td>官方→localStorage；我的→内存</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>工作流编排器</td><td>全屏</td>
+              <td class="file-ref">WorkflowBuilderPage.tsx, WorkflowBuilderEditor.tsx</td>
+              <td>节点流、+ 添加作图/视频能力、右侧节点参数面板</td>
+              <td>保存模板 API 未接</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>新建工作流任务</td><td>Modal</td>
+              <td class="file-ref">WorkflowNewTaskModal.tsx</td>
+              <td>选模板、上传素材、备注 → 任务中心</td>
+              <td>upload API + 内存任务</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>工作流任务详情</td><td>tasks</td>
+              <td class="file-ref">WorkflowTaskDetailPage.tsx</td>
+              <td>步骤条、Mock 步骤结果、商品套图预览</td>
+              <td>workflowStepResults.ts Mock</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>找图-采集</td><td>findimg</td>
+              <td class="file-ref">FindImagePage.tsx, CollectionTaskListContent.tsx</td>
+              <td>插件/店铺 Tab、筛选栏、空表格</td>
+              <td>无 API</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+            </tr>
+            <tr>
+              <td>找图-以图搜图</td><td>findimg</td>
+              <td class="file-ref">FindImagePage.tsx (ImageSearchContent)</td>
+              <td>拖放/上传/空间选图；Google/Shutterstock/Pinterest/MJ</td>
+              <td>新开标签页跳转外链</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>作图-印花提取</td><td>design</td>
+              <td class="file-ref">PatternExtractPage.tsx, PatternExtractModal.tsx</td>
+              <td>专项/全能、透明底、分辨率、比例；任务表+详情</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-一键抠图</td><td>design</td>
+              <td class="file-ref">CutoutPage.tsx, CutoutModal.tsx</td>
+              <td>模式、边缘处理、批量</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-图裂变</td><td>design</td>
+              <td class="file-ref">CrackImagePage.tsx, CrackImageModal.tsx</td>
+              <td>多场景 Tab、铁艺/挂钟/铁皮画等分支</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-文生图</td><td>design</td>
+              <td class="file-ref">TextToImagePage.tsx, TextToImageModal.tsx</td>
+              <td>4 模式、反推提示词、EXCEL 导入</td>
+              <td>tasks + reverse-prompt API</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-商品套图</td><td>design</td>
+              <td class="file-ref">ProductSetPage.tsx, ProductSetTaskModal.tsx</td>
+              <td>任务列表、模板管理入口、两步新建任务</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-套图模板</td><td>design</td>
+              <td class="file-ref">ProductSetTemplatesPage.tsx</td>
+              <td>官方/团队/我的；查看/新建/创建副本</td>
+              <td>官方→localStorage</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>作图-标题提取</td><td>design</td>
+              <td class="file-ref">TitleExtractPage.tsx, TitleExtractTaskModal.tsx</td>
+              <td>任务列表+详情</td>
+              <td>server 无 title-extract 类型 → 纯 Mock</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>作图-转矢量图</td><td>design</td>
+              <td class="file-ref">VectorPage.tsx, VectorTaskModal.tsx</td>
+              <td>常规/黑白风格</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>作图-侵权过滤</td><td>design</td>
+              <td class="file-ref">InfringementFilterPage.tsx, InfringementFilterTaskModal.tsx</td>
+              <td>风险检测任务流</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>功能任务详情</td><td>tasks</td>
+              <td class="file-ref">FeatureTaskDetailPage.tsx</td>
+              <td>结果预览、废弃、再创作、入库、智能编辑</td>
+              <td>featureTasks 内存</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>视频</td><td>video</td>
+              <td class="file-ref">VideoPage.tsx, VideoTaskModal.tsx</td>
+              <td>模特动作/商品律动/风铃；首尾帧、预设、时长</td>
+              <td>submitFeatureTask → server</td>
+              <td><span class="badge badge-api">已对接 API</span></td>
+            </tr>
+            <tr>
+              <td>上架</td><td>publish</td>
+              <td class="file-ref">PublishPage.tsx, ProductLibraryContent.tsx, ProductDetailPage.tsx</td>
+              <td>商品库、店铺管理、刊登模板；AddStoreModal</td>
+              <td>productLibrary 内存种子</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>我的空间</td><td>space</td>
+              <td class="file-ref">MySpacePage.tsx, MySpacePickerModal.tsx</td>
+              <td>网格、容量、标签按钮、批量选择</td>
+              <td>mySpaceData Mock</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+            </tr>
+            <tr>
+              <td>任务中心</td><td>tasks</td>
+              <td class="file-ref">TaskCenterPage.tsx, taskCenterStore.ts</td>
+              <td>功能+工作流聚合；类型/状态筛选；删除</td>
+              <td>内存；无 GET /api/v1/tasks 列表</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>下载中心</td><td>downloads</td>
+              <td class="file-ref">DownloadCenterPage.tsx</td>
+              <td>下载任务列表</td>
+              <td>空态</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 后台 -->
+    <section>
+      <h2>五、管理后台模块与实现状态</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>页面</th>
+              <th>源文件</th>
+              <th>管理内容</th>
+              <th>持久化</th>
+              <th>状态</th>
+              <th>待办</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>登录</td>
+              <td class="file-ref">LoginPage.tsx</td>
+              <td>任意密码进入</td>
+              <td>内存 authed</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+              <td>对接 Admin Token / RBAC</td>
+            </tr>
+            <tr>
+              <td>概览</td>
+              <td class="file-ref">DashboardPage.tsx</td>
+              <td>功能/用户/预设统计、待配置 Key 提醒</td>
+              <td>读 store + shared users</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+              <td>接真实监控指标</td>
+            </tr>
+            <tr>
+              <td>AI 功能配置</td>
+              <td class="file-ref">FeatureDetailPage.tsx</td>
+              <td>8 功能：模型、Provider、API Key、系统/用户提示词、参数映射、限额</td>
+              <td>内存 store.ts</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+              <td>读写 server feature_configs</td>
+            </tr>
+            <tr>
+              <td>场景预设</td>
+              <td class="file-ref">PresetsPage.tsx</td>
+              <td>视频/裂变等 scene prompt 模板 CRUD</td>
+              <td>内存 store.ts</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+              <td>读写 server feature_presets</td>
+            </tr>
+            <tr>
+              <td>推荐案例</td>
+              <td class="file-ref">RecommendationsPage.tsx</td>
+              <td>首页推荐玩法卡片（图/视频/标签）</td>
+              <td>页面内 useState</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+              <td>持久化 API + 前台读取</td>
+            </tr>
+            <tr>
+              <td>工作流模版</td>
+              <td class="file-ref">WorkflowTemplatesAdminPage.tsx</td>
+              <td>官方模板 CRUD；品类/步骤/排序/启用；WorkflowBuilderModal 配置节点参数</td>
+              <td>localStorage pod_official_workflow_templates</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+              <td>迁移至 server；用户端同步</td>
+            </tr>
+            <tr>
+              <td>套图模版</td>
+              <td class="file-ref">ProductSetTemplatesAdminPage.tsx</td>
+              <td>官方套图：名称、品类、主图/缩略图 URL、排序</td>
+              <td>localStorage pod_official_product_set_templates</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+              <td>迁移至 server + OSS 上传</td>
+            </tr>
+            <tr>
+              <td>用户账号</td>
+              <td class="file-ref">UsersPage.tsx</td>
+              <td>开设/编辑/停用前台登录账号</td>
+              <td>localStorage pod_frontend_users</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+              <td>后端用户表 + 密码哈希</td>
+            </tr>
+            <tr>
+              <td>任务监控</td>
+              <td class="file-ref">TasksPage.tsx</td>
+              <td>全站 AI 任务列表（演示数据）</td>
+              <td>内存 INITIAL_TASKS</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+              <td>接 GET /api/admin/v1/tasks</td>
+            </tr>
+            <tr>
+              <td>系统设置</td>
+              <td class="file-ref">SettingsPage.tsx</td>
+              <td>Admin Token、OSS 等占位</td>
+              <td>无</td>
+              <td><span class="badge badge-mock">仅 Mock</span></td>
+              <td>环境配置管理</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 共享层 -->
+    <section>
+      <h2>六、共享数据层（src/shared/）</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>模块</th><th>localStorage 键</th><th>内容</th><th>消费方</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="file-ref">frontendUsers.ts</td>
+              <td><code>pod_frontend_users</code><br><code>pod_frontend_session</code></td>
+              <td>前台账号、登录会话；含演示账号种子</td>
+              <td>用户端登录、后台 UsersPage</td>
+            </tr>
+            <tr>
+              <td class="file-ref">workflowTemplates.ts</td>
+              <td><code>pod_official_workflow_templates</code></td>
+              <td>官方工作流模板（品类、步骤、stepConfigs、排序）</td>
+              <td>后台工作流模版页、用户端官方 Tab</td>
+            </tr>
+            <tr>
+              <td class="file-ref">productSetTemplates.ts</td>
+              <td><code>pod_official_product_set_templates</code></td>
+              <td>官方套图模板（品类、图片 URL）</td>
+              <td>后台套图模版页、ProductSetTemplatesPage</td>
+            </tr>
+            <tr>
+              <td class="file-ref">storageMigrate.ts</td>
+              <td>—</td>
+              <td>旧 <code>lingtu_*</code> 键一次性迁移至 <code>pod_*</code></td>
+              <td>各 store 初始化</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 工作流节点 -->
+    <section>
+      <h2>七、工作流节点类型（编排器已支持）</h2>
+      <div class="card">
+        <p style="color:var(--muted);margin-bottom:12px">
+          <code>WorkflowBuilderEditor</code> 支持「开始 → 添加素材 → 处理节点 → +」；点击节点右侧展示参数面板（<code>workflowNodeConfigPanels.tsx</code>）。后台官方模板通过 <code>WorkflowBuilderModal</code> 同样配置。
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <code>添加素材</code><code>印花图提取</code><code>图案裁剪</code><code>图裂变</code>
+          <code>一键抠图</code><code>商品套图</code><code>标题提取</code>
+          <code>侵权风险过滤</code><code>转矢量图</code><code>文生图</code><code>视频生成</code>
+        </div>
+        <p style="color:var(--muted);font-size:12px">
+          品类 Tab（工作流/套图）：服饰、铁皮画、家用纺织、挂钟、装饰画、手机壳、亚克力、其他；套图另有「推荐」。
+          模板来源：官方（localStorage）、团队（从官方派生 Mock）、我的（用户操作写入内存）。
+        </p>
+      </div>
+    </section>
+
+    <!-- Server API -->
+    <section>
+      <h2>八、Server API 实现状态</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>方法</th><th>路径</th><th>说明</th><th>状态</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GET</td><td>/health</td><td>健康检查，service: pod-api</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/config/features</td><td>公开功能配置列表（脱敏）</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/config/features/:type</td><td>单功能配置</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/config/features/:type/presets</td><td>场景预设列表</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/config/features/:type/presets/:key</td><td>单条预设</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>POST</td><td>/api/v1/tasks</td><td>创建任务（校验 feature 启用）</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/tasks/:id</td><td>查询任务详情</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>POST</td><td>/api/v1/tasks/:id/run</td><td>执行任务（Chat 占位 / 演示图）</td><td><span class="badge badge-partial">部分实现</span></td></tr>
+            <tr><td>POST</td><td>/api/v1/tasks/:id/retry</td><td>重试任务</td><td><span class="badge badge-partial">部分实现</span></td></tr>
+            <tr><td>GET</td><td>/api/v1/tasks</td><td>前台任务列表</td><td><span class="badge badge-todo">未实现</span></td></tr>
+            <tr><td>POST</td><td>/api/v1/upload/presign</td><td>OSS 预签名</td><td><span class="badge badge-mock">Stub local://</span></td></tr>
+            <tr><td>POST</td><td>/api/v1/text2img/reverse-prompt</td><td>图片反推提示词</td><td><span class="badge badge-partial">部分实现</span></td></tr>
+            <tr><td>GET/PUT</td><td>/api/admin/v1/feature-configs</td><td>管理端功能配置 CRUD</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>CRUD</td><td>/api/admin/v1/presets</td><td>场景预设管理</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>GET</td><td>/api/admin/v1/tasks</td><td>管理端任务列表</td><td><span class="badge badge-api">已实现</span></td></tr>
+            <tr><td>—</td><td>工作流 / 采集 / 商品 / 店铺 / 下载 / 用户</td><td>业务域 API</td><td><span class="badge badge-todo">未实现</span></td></tr>
+            <tr><td>—</td><td>title-extract 功能类型</td><td>前台已有，server FeatureType 缺失</td><td><span class="badge badge-todo">未实现</span></td></tr>
+            <tr><td>WS</td><td>/ws/tasks</td><td>任务进度推送</td><td><span class="badge badge-todo">未实现</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 主开发表 -->
+    <section>
+      <h2>九、开发项目总表（按模块）</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px">ID</th>
+              <th style="width:88px">模块</th>
+              <th style="width:140px">功能点</th>
+              <th>需求描述 / 验收要点</th>
+              <th style="width:64px">优先级</th>
+              <th style="width:64px">负责</th>
+              <th style="width:80px">依赖</th>
+              <th style="width:72px">工期估</th>
+              <th style="width:88px">现状</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">A. 基础设施 & 工程化</td></tr>
+            <tr>
+              <td>A01</td><td>工程化</td><td>路由与深链</td>
+              <td>接入 React Router；URL 与侧栏同步；任务详情/弹窗可分享链接</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>—</td><td>3d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+            <tr>
+              <td>A02</td><td>工程化</td><td>用户鉴权体系</td>
+              <td>替换 localStorage 明文密码；JWT 刷新；与后台 UsersPage 打通 server 用户表</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>—</td><td>5d</td>
+              <td><span class="badge badge-partial">原型登录</span></td>
+            </tr>
+            <tr>
+              <td>A03</td><td>工程化</td><td>API 层统一</td>
+              <td>apiClient 已有；补全错误处理、TanStack Query、任务列表轮询/WS</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>A02</td><td>3d</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>A04</td><td>工程化</td><td>真实文件上传</td>
+              <td>presign → OSS 直传；assets 表；各弹窗/空间打通</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>A02</td><td>5d</td>
+              <td><span class="badge badge-mock">Stub</span></td>
+            </tr>
+            <tr>
+              <td>A05</td><td>工程化</td><td>任务持久化 & 列表 API</td>
+              <td>GET /api/v1/tasks；前台任务中心/各功能页从 server 拉取；刷新不丢</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>A02</td><td>4d</td>
+              <td><span class="badge badge-partial">创建/详情已有</span></td>
+            </tr>
+            <tr>
+              <td>A06</td><td>工程化</td><td>Admin ↔ Server 配置同步</td>
+              <td>后台 FeatureDetail/Presets 读写 SQLite；消除双份配置源</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>—</td><td>4d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+            <tr>
+              <td>A07</td><td>工程化</td><td>专用 AI Provider</td>
+              <td>图像/视频推理服务替代 taskRunner Chat 占位；按 featureType 分发 pipeline</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>A05</td><td>20d</td>
+              <td><span class="badge badge-partial">Chat 占位</span></td>
+            </tr>
+            <tr>
+              <td>A08</td><td>工程化</td><td>全局搜索 ⌘K</td>
+              <td>搜索任务、商品、素材、模板</td>
+              <td><span class="badge badge-p2">P2</span></td><td><span class="badge badge-fe">前端</span></td><td>A05</td><td>4d</td>
+              <td><span class="badge badge-ui">UI 占位</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">B. 管理后台</td></tr>
+            <tr>
+              <td>B01</td><td>后台</td><td>官方工作流模版</td>
+              <td>已实现列表+编辑+WorkflowBuilderModal；需迁移 server + 图片资源管理</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-be">后端</span></td><td>A06</td><td>3d</td>
+              <td><span class="badge badge-partial">localStorage</span></td>
+            </tr>
+            <tr>
+              <td>B02</td><td>后台</td><td>官方套图模版</td>
+              <td>已实现 CRUD；需 OSS 上传替代 URL 手填</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-be">后端</span></td><td>A04</td><td>3d</td>
+              <td><span class="badge badge-partial">localStorage</span></td>
+            </tr>
+            <tr>
+              <td>B03</td><td>后台</td><td>推荐案例配置</td>
+              <td>RecommendationsPage UI 已有；持久化并驱动首页 recommendations</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-be">后端</span></td><td>—</td><td>3d</td>
+              <td><span class="badge badge-mock">内存</span></td>
+            </tr>
+            <tr>
+              <td>B04</td><td>后台</td><td>任务监控对接</td>
+              <td>TasksPage 接 GET /api/admin/v1/tasks 真实数据</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-fe">前端</span></td><td>A05</td><td>2d</td>
+              <td><span class="badge badge-mock">演示数据</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">C. 我的空间</td></tr>
+            <tr>
+              <td>C01</td><td>我的空间</td><td>素材 CRUD</td>
+              <td>MySpacePage 网格+容量 UI；SelectFromMySpaceButton 已用于多场景</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>A04</td><td>4d</td>
+              <td><span class="badge badge-mock">Mock 5 条</span></td>
+            </tr>
+            <tr>
+              <td>C02</td><td>我的空间</td><td>标签 & 批量操作</td>
+              <td>标签管理按钮已有；补 API 与批量删除/移动</td>
+              <td><span class="badge badge-p2">P2</span></td><td><span class="badge badge-fe">前端</span></td><td>C01</td><td>3d</td>
+              <td><span class="badge badge-ui">UI 占位</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">D. 找图</td></tr>
+            <tr>
+              <td>D01</td><td>找图</td><td>浏览器插件采集</td>
+              <td>插件写入采集列表；安装检测、FAQ</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-infra">插件</span></td><td>A04,A05</td><td>10d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+            <tr>
+              <td>D02</td><td>找图</td><td>采集列表 & 任务</td>
+              <td>FindImagePage 表格/筛选 UI 完整；CollectionTaskListContent 空列表</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>D01</td><td>5d</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>D03</td><td>找图</td><td>以图搜图</td>
+              <td>已实现选图+选平台+按钮高亮+外链跳转；后续可接平台 API 回传结果</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-be">后端</span></td><td>C01</td><td>8d</td>
+              <td><span class="badge badge-partial">外链跳转</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">E. 作图 — AI 图像</td></tr>
+            <tr>
+              <td>E01</td><td>作图</td><td>一键抠图</td>
+              <td>CutoutPage + Modal + 任务详情；submitFeatureTask</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E02</td><td>作图</td><td>印花图提取</td>
+              <td>专项/全能、透明底、1k/4k、比例；节点配置面板已对齐</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E03</td><td>作图</td><td>图裂变全场景</td>
+              <td>默认/服装/铁艺/挂钟/铁皮画等 CrackImageModal 分支</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E04</td><td>作图</td><td>文生图</td>
+              <td>4 模式、反推、EXCEL；reverse-prompt API</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E05</td><td>作图</td><td>转矢量图</td>
+              <td>VectorPage + Modal + 详情</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E06</td><td>作图</td><td>侵权风险过滤</td>
+              <td>InfringementFilterPage + Modal</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>E07</td><td>作图</td><td>标题提取</td>
+              <td>TitleExtractPage 已修复白屏；需 server 补 title-extract 类型</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>5d</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>E08</td><td>作图</td><td>图案裁剪</td>
+              <td>工作流节点名存在；无独立功能页，需补或并入节点</td>
+              <td><span class="badge badge-p2">P2</span></td><td><span class="badge badge-ai">AI</span></td><td>E01</td><td>6d</td>
+              <td><span class="badge badge-todo">仅工作流提及</span></td>
+            </tr>
+            <tr>
+              <td>E09</td><td>作图</td><td>功能任务详情通用能力</td>
+              <td>FeatureTaskDetailPage：预览、废弃、再创作、入库、智能编辑</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-fe">前端</span></td><td>A05</td><td>—</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">F. 商品套图</td></tr>
+            <tr>
+              <td>F01</td><td>套图</td><td>套图任务 & 两步新建</td>
+              <td>ProductSetPage + ProductSetTaskModal Step1/2</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+            <tr>
+              <td>F02</td><td>套图</td><td>套图模板管理</td>
+              <td>官方/团队/我的；后台可配官方模板</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>B02</td><td>—</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>F03</td><td>套图</td><td>套图合成引擎</td>
+              <td>印花处理、描边、压缩、多模板批量输出</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-ai">AI</span></td><td>F01,A04</td><td>12d</td>
+              <td><span class="badge badge-partial">Mock 结果</span></td>
+            </tr>
+            <tr>
+              <td>F04</td><td>套图</td><td>PSD 样机</td>
+              <td>用户 PSD 1:1 套图</td>
+              <td><span class="badge badge-p2">P2</span></td><td><span class="badge badge-ai">AI</span></td><td>F03</td><td>15d</td>
+              <td><span class="badge badge-todo">待规划</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">G. 视频</td></tr>
+            <tr>
+              <td>G01</td><td>视频</td><td>视频任务 & Modal</td>
+              <td>三场景、首尾帧、预设、清晰度、时长、数量</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-ai">AI</span></td><td>A07</td><td>—</td>
+              <td><span class="badge badge-api">UI+API</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">H. 上架</td></tr>
+            <tr>
+              <td>H01</td><td>上架</td><td>商品库</td>
+              <td>列表筛选 UI；ProductDetailPage；任务结果可入库</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>—</td><td>6d</td>
+              <td><span class="badge badge-partial">内存种子</span></td>
+            </tr>
+            <tr>
+              <td>H02</td><td>上架</td><td>店铺管理</td>
+              <td>列表+AddStoreModal（Temu/Amazon/Shein）</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>A02</td><td>5d</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>H03</td><td>上架</td><td>批量刊登上架</td>
+              <td>商品库 → 店铺 → 平台 API</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>H01,H02</td><td>15d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">I. 工作流引擎</td></tr>
+            <tr>
+              <td>I01</td><td>工作流</td><td>模板库</td>
+              <td>官方 localStorage + 团队 Mock + 我的内存；WorkflowModal/CopyModal</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>A02</td><td>5d</td>
+              <td><span class="badge badge-partial">部分实现</span></td>
+            </tr>
+            <tr>
+              <td>I02</td><td>工作流</td><td>可视化编排器</td>
+              <td>WorkflowBuilderEditor：节点、+菜单、参数面板、stepConfigs 持久化（官方模板）</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>I01</td><td>—</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+            <tr>
+              <td>I03</td><td>工作流</td><td>工作流执行引擎</td>
+              <td>按节点调度 E/F/G 任务；状态机；WorkflowTaskDetail 接真实步骤结果</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>I02,A05</td><td>15d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+            <tr>
+              <td>I04</td><td>工作流</td><td>新建任务 & 模板副本</td>
+              <td>WorkflowNewTaskModal；以此新建模版 → Builder；创建副本 → 我的模版</td>
+              <td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-fe">前端</span></td><td>I01</td><td>—</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+
+            <tr><td colspan="9" style="background:#1a1d24;font-weight:600;color:var(--primary)">J. 任务中心 & 下载</td></tr>
+            <tr>
+              <td>J01</td><td>任务中心</td><td>聚合列表 & 筛选</td>
+              <td>功能任务+工作流任务；类型/状态筛选；跳转双详情页</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-fe">前端</span></td><td>A05</td><td>—</td>
+              <td><span class="badge badge-partial">内存聚合</span></td>
+            </tr>
+            <tr>
+              <td>J02</td><td>任务中心</td><td>结果下载 & 备注</td>
+              <td>打包下载；跳转下载中心</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>J03</td><td>4d</td>
+              <td><span class="badge badge-todo">待开发</span></td>
+            </tr>
+            <tr>
+              <td>J03</td><td>下载中心</td><td>异步打包任务</td>
+              <td>DownloadCenterPage 空态 UI</td>
+              <td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-be">后端</span></td><td>A04</td><td>5d</td>
+              <td><span class="badge badge-ui">UI 已完成</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 前台 API 集成 -->
+    <section>
+      <h2>十、前台 API 集成对照</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>文件</th><th>调用</th><th>真实 API</th><th>Mock 回退</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="file-ref">api/apiClient.ts</td><td>通用 fetch</td><td>DEV 代理 / VITE_API_BASE_URL</td><td>—</td></tr>
+            <tr><td class="file-ref">api/taskApi.ts</td><td>POST /api/v1/tasks</td><td>✓</td><td>catch → null</td></tr>
+            <tr><td class="file-ref">featureTaskApi.ts</td><td>POST .../run, retry</td><td>✓ 有 remoteTaskId</td><td>本地延迟 + 演示图</td></tr>
+            <tr><td class="file-ref">api/featureConfigApi.ts</td><td>GET /api/v1/config/*</td><td>✓</td><td>空 Map</td></tr>
+            <tr><td class="file-ref">api/uploadApi.ts</td><td>POST .../presign</td><td>Stub</td><td>blob URL</td></tr>
+            <tr><td class="file-ref">api/reversePromptApi.ts</td><td>POST .../reverse-prompt</td><td>部分</td><td>随机 Mock 文案</td></tr>
+            <tr><td class="file-ref">featureTasks.tsx</td><td>编排提交</td><td>部分</td><td>内存 store</td></tr>
+            <tr><td class="file-ref">workflowTasks.tsx</td><td>—</td><td>✗</td><td>纯内存</td></tr>
+            <tr><td class="file-ref">shared/*Templates.ts</td><td>—</td><td>✗</td><td>localStorage</td></tr>
+            <tr><td class="file-ref">shared/frontendUsers.ts</td><td>—</td><td>✗</td><td>localStorage</td></tr>
+            <tr><td class="file-ref">admin/store.ts</td><td>—</td><td>✗ 未调 server</td><td>内存</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 排期 -->
+    <section>
+      <h2>十一、建议分期排期（基于现状）</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>第一期：打通数据与 AI 真能力（约 6–8 周）</h3>
+          <ul class="compact">
+            <li>A02/A05/A06 Admin↔Server 与用户/任务持久化</li>
+            <li>A04 真实 OSS 上传 + C01 我的空间 API</li>
+            <li>A07 专用图像推理替换 Chat 占位</li>
+            <li>E07 server 补齐 title-extract</li>
+            <li>B04 后台任务监控接真实数据</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>第二期：业务闭环（约 8–10 周）</h3>
+          <ul class="compact">
+            <li>I03 工作流执行引擎 + 步骤结果回写</li>
+            <li>F03 套图合成真实输出</li>
+            <li>D01–D02 插件采集 API</li>
+            <li>H01–H03 商品库 + 店铺 + 刊登</li>
+            <li>J02–J03 下载打包</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>第三期：增长与运营（约 4–6 周）</h3>
+          <ul class="compact">
+            <li>B03 推荐案例持久化 + 首页动态化</li>
+            <li>D03 以图搜图平台 API（可选）</li>
+            <li>F04 PSD 样机、A08 全局搜索</li>
+            <li>E08 图案裁剪独立能力</li>
+            <li>A01 React Router 深链</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>已完成（无需重复排期）</h3>
+          <ul class="compact">
+            <li>作图 8 项功能 UI + 任务流（除标题提取 server 类型）</li>
+            <li>工作流编排器、模板管理、新建任务全流程 UI</li>
+            <li>任务中心双详情页、功能任务通用详情</li>
+            <li>后台官方工作流/套图模版管理 + 可视化配置</li>
+            <li>前台登录、后台用户管理（localStorage）</li>
+            <li>以图搜图外链跳转交互</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 风险 -->
+    <section>
+      <h2>十二、技术风险与待确认项</h2>
+      <div class="card">
+        <ul class="compact">
+          <li><strong>双配置源</strong>：admin/store.ts 与 server SQLite 不一致，生产前必须统一</li>
+          <li><strong>任务双写</strong>：前台内存任务与 server tasks 表未双向同步，刷新后列表不一致</li>
+          <li><strong>AI 占位</strong>：taskRunner 使用 Chat Completions，非真实抠图/裂变/视频 pipeline</li>
+          <li><strong>无路由</strong>：任务详情、商品编辑无法 URL 分享</li>
+          <li><strong>明文密码</strong>：frontendUsers localStorage 仅适合原型</li>
+          <li><strong>插件方案</strong>：采集插件与主站账号、跨域通信待产品确认</li>
+          <li><strong>平台刊登</strong>：Temu/Amazon/Shein API 合规与限流单独评估</li>
+          <li><strong>批量上限</strong>：1000 张任务对队列与 GPU 资源规划压力大</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer style="text-align:center;color:var(--muted);font-size:12px;padding-top:24px;border-top:1px solid var(--border)">
+      基于 POD 代码库 v2.0 拆解 · <code>docs/开发项目拆解表.html</code> · 浏览器直接打开或打印 · 更新 2026-05-29
+    </footer>
+  </div>
+</body>
+</html>
