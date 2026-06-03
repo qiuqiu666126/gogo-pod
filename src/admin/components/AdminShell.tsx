@@ -11,6 +11,7 @@ import {
   GitBranch,
   LayoutGrid,
   MessageSquareText,
+  Paperclip,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logoutAdmin } from "../api/passportApi";
@@ -33,6 +34,7 @@ const NAV: { id: NavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "product-set-templates", label: "套图模版", icon: LayoutGrid },
   { id: "publish-templates", label: "刊登模版", icon: MessageSquareText },
   { id: "users", label: "用户账号管理", icon: Users },
+  { id: "attachments", label: "附件管理", icon: Paperclip },
   { id: "tasks", label: "任务监控", icon: ListTodo },
   { id: "settings", label: "系统设置", icon: Settings },
 ];

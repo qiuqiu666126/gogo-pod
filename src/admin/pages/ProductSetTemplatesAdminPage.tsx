@@ -11,11 +11,11 @@ import {
   Undo2,
   Redo2,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
 
 import { AdminShell } from "../components/AdminShell";
+import { AttachmentPicker } from "../components/AttachmentPicker";
 import { Badge, Btn, Card, Field, inputCls } from "../components/ui";
 import {
   PRODUCT_SET_CATEGORY_TABS,
@@ -38,18 +38,6 @@ function useOfficialProductSetTemplates() {
     getOfficialProductSetTemplatesList,
     getOfficialProductSetTemplatesList,
   );
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("图片读取失败"));
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("图片读取失败"));
-    reader.readAsDataURL(file);
-  });
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -446,7 +434,6 @@ function EditorSidebar({
   selectedPlacement,
   onTemplateChange,
   onImageChange,
-  onImageUpload,
   onDeleteImage,
   onAddPlacement,
   onPlacementChange,
@@ -457,7 +444,6 @@ function EditorSidebar({
   selectedPlacement?: ProductSetPlacement;
   onTemplateChange: (next: OfficialProductSetTemplate) => void;
   onImageChange: (next: ProductSetMockupImage) => void;
-  onImageUpload: (file?: File) => void;
   onDeleteImage: () => void;
   onAddPlacement: () => void;
   onPlacementChange: (next: ProductSetPlacement) => void;
@@ -538,32 +524,18 @@ function EditorSidebar({
             />
           </Field>
           <Field label="图片 URL">
-            <input
-              className={fieldCls(true)}
-              value={activeImage?.imageUrl ?? ""}
+            <AttachmentPicker
+              tone="dark"
               disabled={!activeImage}
-              placeholder="https://... 或上传本地图片"
-              onChange={(event) => {
+              value={activeImage?.imageUrl ?? ""}
+              onChange={(imageUrl) => {
                 if (!activeImage) return;
-                onImageChange({ ...activeImage, imageUrl: event.target.value });
+                onImageChange({ ...activeImage, imageUrl });
               }}
+              placeholder="https://... 或从附件库选择 / 上传图片"
+              hint="套图底图会保存为附件 URL"
             />
           </Field>
-          <div className="flex gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#47484d] px-3 py-2 text-[11px] text-white/90 hover:border-[#d16d41]">
-              <Upload size={12} />
-              上传本地图片
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  onImageUpload(event.target.files?.[0]);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
-          </div>
         </div>
 
         <div className="space-y-3 rounded-xl border border-[#2f3034] bg-[#101114] p-3">
@@ -620,7 +592,6 @@ function EditorLayout({
   onTemplateChange,
   onActiveImageIdChange,
   onSelectedPlacementIdChange,
-  onUploadImage,
 }: {
   editing: OfficialProductSetTemplate;
   activeImageId: string;
@@ -630,7 +601,6 @@ function EditorLayout({
   onTemplateChange: (next: OfficialProductSetTemplate) => void;
   onActiveImageIdChange: (imageId: string) => void;
   onSelectedPlacementIdChange: (placementId: string) => void;
-  onUploadImage: (imageId: string, file?: File) => void;
 }) {
   const activeImage = editing.images.find((image) => image.id === activeImageId) ?? editing.images[0];
   const selectedPlacement = activeImage?.placements.find((placement) => placement.id === selectedPlacementId);
@@ -742,10 +712,6 @@ function EditorLayout({
             onImageChange={(next) => {
               if (!activeImage) return;
               onTemplateChange(updateImageAt(editing, activeImage.id, () => next));
-            }}
-            onImageUpload={(file) => {
-              if (!activeImage) return;
-              void onUploadImage(activeImage.id, file);
             }}
             onDeleteImage={() => {
               if (!activeImage || editing.images.length <= 1) return;
@@ -921,12 +887,6 @@ export function ProductSetTemplatesAdminPage() {
     setSelectedPlacementId("");
   };
 
-  const uploadImage = async (imageId: string, file?: File) => {
-    if (!file || !editing) return;
-    const dataUrl = await readFileAsDataUrl(file);
-    setEditing(updateImageAt(editing, imageId, (image) => ({ ...image, imageUrl: dataUrl })));
-  };
-
   return (
     <AdminShell
       title="套图模版"
@@ -1021,7 +981,6 @@ export function ProductSetTemplatesAdminPage() {
           onTemplateChange={setEditing}
           onActiveImageIdChange={setActiveImageId}
           onSelectedPlacementIdChange={setSelectedPlacementId}
-          onUploadImage={uploadImage}
         />
       ) : null}
     </AdminShell>

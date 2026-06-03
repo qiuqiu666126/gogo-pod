@@ -19,6 +19,7 @@ import { WorkflowTemplatesAdminPage } from "./pages/WorkflowTemplatesAdminPage";
 import { ProductSetTemplatesAdminPage } from "./pages/ProductSetTemplatesAdminPage";
 import { PublishTemplatesAdminPage } from "./pages/PublishTemplatesAdminPage";
 import { UsersPage } from "./pages/UsersPage";
+import { AttachmentsPage } from "./pages/AttachmentsPage";
 
 export function AdminApp() {
   const { authed, activeNav, adminAuth, adminUser } = useAdminStore();
@@ -71,6 +72,8 @@ export function AdminApp() {
       return <PublishTemplatesAdminPage />;
     case "users":
       return <UsersPage />;
+    case "attachments":
+      return <AttachmentsPage />;
     case "tasks":
       return <TasksPage />;
     case "settings":

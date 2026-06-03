@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronUp, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { Badge, Field, inputCls, textareaCls } from "./ui";
+import { AttachmentPicker } from "./AttachmentPicker";
+import { AttachmentImage } from "./AttachmentImage";
 import {
   CONTROL_TYPE_LABELS,
   createControl,
@@ -26,18 +28,6 @@ function controlNodeId(controlId: string) {
 
 function optionNodeId(controlId: string, index: number) {
   return `scene-option-${controlId}-${index}`;
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("图片读取失败"));
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("图片读取失败"));
-    reader.readAsDataURL(file);
-  });
 }
 
 function parseOptions(text: string): FormControlOption[] {
@@ -189,17 +179,6 @@ export function FormControlEditor({
   const [open, setOpen] = useState(depth === 0);
   const [optionMode, setOptionMode] = useState<"visual" | "text">("visual");
   const hasOptions = ["radio", "select", "number-buttons", "multi-checkbox"].includes(control.type);
-
-  const handleOptionImageUpload = async (index: number, file?: File) => {
-    if (!file) return;
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      onChange(updateOptionAt(control, index, { thumbnailUrl: dataUrl }));
-    } catch (error) {
-      console.error(error);
-      alert("图片读取失败，请重试");
-    }
-  };
 
   return (
     <div
@@ -446,50 +425,14 @@ export function FormControlEditor({
                               />
                             </Field>
                             <Field label="缩略图 URL" className="sm:col-span-2">
-                              <div className="space-y-2">
-                                <input
-                                  className={inputCls}
-                                  value={opt.thumbnailUrl ?? ""}
-                                  onFocus={() => onFocusControl?.(control)}
-                                  onChange={(e) =>
-                                    onChange(
-                                      updateOptionAt(control, index, {
-                                        thumbnailUrl: e.target.value,
-                                      }),
-                                    )
-                                  }
-                                  placeholder="https://...、/uploads/xxx.png，或通过下方上传本地图片"
-                                />
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-[12px] text-foreground hover:border-primary/50">
-                                    <ImageIcon size={13} className="text-primary" />
-                                    上传本地图片
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        void handleOptionImageUpload(index, e.target.files?.[0]);
-                                        e.currentTarget.value = "";
-                                      }}
-                                    />
-                                  </label>
-                                  {opt.thumbnailUrl ? (
-                                    <button
-                                      type="button"
-                                      className="text-[12px] text-muted-foreground hover:text-foreground"
-                                      onClick={() =>
-                                        onChange(updateOptionAt(control, index, { thumbnailUrl: "" }))
-                                      }
-                                    >
-                                      清空图片
-                                    </button>
-                                  ) : null}
-                                </div>
-                                <p className="text-[11px] text-muted-foreground">
-                                  原型阶段会把本地图片转成数据地址保存在配置里，正式版建议改成上传后返回静态 URL。
-                                </p>
-                              </div>
+                              <AttachmentPicker
+                                value={opt.thumbnailUrl ?? ""}
+                                onChange={(thumbnailUrl) =>
+                                  onChange(updateOptionAt(control, index, { thumbnailUrl }))
+                                }
+                                placeholder="https://... 或从附件库选择 / 上传图片"
+                                hint="用于前台卡片展示，图片会保存为附件 URL"
+                              />
                             </Field>
                             <Field label="预览字">
                               <input
@@ -534,8 +477,8 @@ export function FormControlEditor({
                               </div>
                               <div className="relative h-24 border-t border-border bg-muted/50">
                                 {opt.thumbnailUrl ? (
-                                  <img
-                                    src={opt.thumbnailUrl}
+                                  <AttachmentImage
+                                    url={opt.thumbnailUrl}
                                     alt={opt.label || "选项预览"}
                                     className="h-full w-full object-cover"
                                   />

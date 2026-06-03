@@ -80,5 +80,6 @@ export type NavId =
   | "product-set-templates"
   | "publish-templates"
   | "users"
+  | "attachments"
   | "tasks"
   | "settings";
