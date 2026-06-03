@@ -10,3 +10,4 @@ server/.env
 *.db-wal
 *.db-shm
 .tools/
+.DS_Store
