@@ -31,6 +31,71 @@ export function pipelineStepsFromNodes(nodes: WorkflowBuilderNode[]): string[] {
   return nodes.filter((n) => !n.isMaterial).map((n) => n.label);
 }
 
+/** 获取可编排的处理节点（不含「添加素材」）在 nodes 中的下标 */
+export function getPipelineNodeIndexes(nodes: WorkflowBuilderNode[]): number[] {
+  return nodes.flatMap((node, index) => (node.isMaterial ? [] : [index]));
+}
+
+export function movePipelineNode(
+  nodes: WorkflowBuilderNode[],
+  nodeId: string,
+  direction: "up" | "down",
+): WorkflowBuilderNode[] {
+  const currentIndex = nodes.findIndex((node) => node.id === nodeId);
+  if (currentIndex < 0 || nodes[currentIndex]?.isMaterial) {
+    return nodes;
+  }
+
+  const pipelineIndexes = getPipelineNodeIndexes(nodes);
+  const position = pipelineIndexes.indexOf(currentIndex);
+  if (position < 0) {
+    return nodes;
+  }
+
+  const targetPosition = direction === "up" ? position - 1 : position + 1;
+  const targetIndex = pipelineIndexes[targetPosition];
+  if (targetIndex === undefined) {
+    return nodes;
+  }
+
+  const next = [...nodes];
+  [next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]];
+  return next;
+}
+
+export function deletePipelineNode(nodes: WorkflowBuilderNode[], nodeId: string): WorkflowBuilderNode[] {
+  const target = nodes.find((node) => node.id === nodeId);
+  if (!target || target.isMaterial) {
+    return nodes;
+  }
+  return nodes.filter((node) => node.id !== nodeId);
+}
+
+export function pickFallbackSelectedNodeId(
+  nodes: WorkflowBuilderNode[],
+  removedNodeId: string,
+  previousSelectedId: string | null,
+): string | null {
+  if (previousSelectedId !== removedNodeId) {
+    return previousSelectedId;
+  }
+
+  const pipelineIndexes = getPipelineNodeIndexes(nodes);
+  const removedIndex = nodes.findIndex((node) => node.id === removedNodeId);
+  if (removedIndex < 0) {
+    return nodes.find((node) => !node.isMaterial)?.id ?? nodes[0]?.id ?? null;
+  }
+
+  const position = pipelineIndexes.indexOf(removedIndex);
+  const fallbackIndex =
+    pipelineIndexes[position] ??
+    pipelineIndexes[position - 1] ??
+    pipelineIndexes[0] ??
+    nodes.findIndex((node) => node.isMaterial);
+
+  return fallbackIndex >= 0 ? nodes[fallbackIndex]?.id ?? null : null;
+}
+
 export function applyStepConfigsToNodeConfigs(
   nodes: WorkflowBuilderNode[],
   stepConfigs?: Record<string, Record<string, unknown>>,

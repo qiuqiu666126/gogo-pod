@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronRight, PenTool, Video, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, ChevronUp, PenTool, Trash2, Video, X } from "lucide-react";
 import type { WorkflowStepDraft } from "../admin/api/workflowMappers";
 import type { WorkflowStepOptionGroupDto } from "../admin/api/aiWorkflowTemplateApi";
 import type { FormValue } from "../shared/sceneFormSchema";
@@ -14,8 +14,12 @@ import {
 import {
   applyStepConfigsToNodeConfigs,
   applyWorkflowStepsToNodeConfigs,
+  deletePipelineNode,
+  getPipelineNodeIndexes,
+  movePipelineNode,
   nodeConfigsToStepConfigs,
   nodesToWorkflowSteps,
+  pickFallbackSelectedNodeId,
   pipelineStepsFromNodes,
   stepsToNodes,
   workflowStepsToNodes,
@@ -247,6 +251,7 @@ export function WorkflowBuilderEditor({
   const addMenuWrapRef = useRef<HTMLDivElement>(null);
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
+  const pipelineIndexes = useMemo(() => getPipelineNodeIndexes(nodes), [nodes]);
 
   const patchNodeConfig = (nodeId: string, patch: Record<string, unknown>) => {
     setNodeConfigs((prev) => ({
@@ -346,6 +351,30 @@ export function WorkflowBuilderEditor({
     });
   };
 
+  const moveNode = (nodeId: string, direction: "up" | "down") => {
+    setNodes((prev) => movePipelineNode(prev, nodeId, direction));
+  };
+
+  const removeNode = (nodeId: string) => {
+    setSelectedId(pickFallbackSelectedNodeId(nodes, nodeId, selectedId));
+    setNodes(deletePipelineNode(nodes, nodeId));
+    setNodeConfigs((prev) => {
+      if (!(nodeId in prev)) return prev;
+      const next = { ...prev };
+      delete next[nodeId];
+      return next;
+    });
+  };
+
+  const getNodeOrderState = (nodeId: string) => {
+    const index = nodes.findIndex((node) => node.id === nodeId);
+    const position = pipelineIndexes.indexOf(index);
+    return {
+      canMoveUp: position > 0,
+      canMoveDown: position >= 0 && position < pipelineIndexes.length - 1,
+    };
+  };
+
   return (
     <div className={`flex flex-col bg-background text-foreground ${className}`}>
       <div className="flex items-center justify-between h-12 px-4 border-b border-border bg-secondary shrink-0 gap-3">
@@ -395,38 +424,83 @@ export function WorkflowBuilderEditor({
                 开始
               </div>
 
-              {nodes.map((node) => (
+              {nodes.map((node) => {
+                const { canMoveUp, canMoveDown } = getNodeOrderState(node.id);
+
+                return (
                 <div key={node.id} className="flex flex-col items-center w-full">
                   <Connector />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(node.id)}
-                    className={`relative w-[148px] rounded-lg text-left transition-all ${
-                      node.isMaterial
-                        ? "h-[52px] border border-dashed px-3 flex items-center justify-center"
-                        : "min-h-[58px] border px-3 py-2.5"
-                    } ${
-                      selectedId === node.id
-                        ? "border-primary bg-secondary shadow-[0_0_0_1px_rgba(242,100,25,0.5),0_8px_24px_rgba(242,100,25,0.12)]"
-                        : "border-border bg-secondary/90 hover:border-primary/35"
-                    }`}
-                  >
-                    <div
-                      className={`text-[13px] font-medium ${
-                        node.isMaterial ? "text-center text-muted-foreground w-full" : "text-foreground"
-                      }`}
-                    >
-                      {node.label}
-                    </div>
+                  <div className="flex items-start gap-1.5">
                     {!node.isMaterial && (
-                      <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
-                        配置参数
-                        <ChevronRight size={12} className="ml-0.5 text-primary/80" />
+                      <div className="flex flex-col gap-0.5 pt-2 shrink-0">
+                        <button
+                          type="button"
+                          aria-label="上移节点"
+                          disabled={!canMoveUp}
+                          onClick={() => moveNode(node.id, "up")}
+                          className="w-6 h-6 rounded-md border border-border/70 bg-secondary/80 text-muted-foreground flex items-center justify-center hover:border-primary/40 hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="下移节点"
+                          disabled={!canMoveDown}
+                          onClick={() => moveNode(node.id, "down")}
+                          className="w-6 h-6 rounded-md border border-border/70 bg-secondary/80 text-muted-foreground flex items-center justify-center hover:border-primary/40 hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
                       </div>
                     )}
-                  </button>
+                    <div className="relative group">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(node.id)}
+                        className={`relative w-[148px] rounded-lg text-left transition-all ${
+                          node.isMaterial
+                            ? "h-[52px] border border-dashed px-3 flex items-center justify-center"
+                            : "min-h-[58px] border px-3 py-2.5"
+                        } ${
+                          selectedId === node.id
+                            ? "border-primary bg-secondary shadow-[0_0_0_1px_rgba(242,100,25,0.5),0_8px_24px_rgba(242,100,25,0.12)]"
+                            : "border-border bg-secondary/90 hover:border-primary/35"
+                        }`}
+                      >
+                        <div
+                          className={`text-[13px] font-medium ${
+                            node.isMaterial ? "text-center text-muted-foreground w-full" : "text-foreground"
+                          }`}
+                        >
+                          {node.label}
+                        </div>
+                        {!node.isMaterial && (
+                          <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
+                            配置参数
+                            <ChevronRight size={12} className="ml-0.5 text-primary/80" />
+                          </div>
+                        )}
+                      </button>
+                      {!node.isMaterial && (
+                        <button
+                          type="button"
+                          aria-label="删除节点"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeNode(node.id);
+                          }}
+                          className={`absolute -top-2 -right-2 w-6 h-6 rounded-full border border-border bg-card text-muted-foreground shadow-sm flex items-center justify-center hover:border-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-opacity ${
+                            selectedId === node.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
+              );
+              })}
 
               <Connector />
               <div ref={addMenuWrapRef} className="relative flex flex-col items-center">
@@ -473,25 +547,57 @@ export function WorkflowBuilderEditor({
                 <p className="text-[13px] text-muted-foreground leading-relaxed">
                   工作流起始节点。用户创建任务时在此步骤上传或选择素材，后续节点将基于素材依次执行。
                 </p>
-              ) : isPresetMode && selectedNode.formFields?.length ? (
-                <div className="space-y-5">
-                  <DynamicFormFields
-                    fields={selectedNode.formFields}
-                    values={selectedValues as Record<string, FormValue>}
-                    onChange={handleDynamicFieldChange}
-                  />
-                  <ManualReviewToggle enabled={manualReview} onChange={setManualReview} />
-                </div>
               ) : (
-                <WorkflowNodeConfigPanel
-                  key={selectedNode.id}
-                  nodeLabel={selectedNode.label}
-                  isMaterial={selectedNode.isMaterial}
-                  config={nodeConfigs[selectedNode.id] ?? {}}
-                  onConfigChange={(patch) => patchNodeConfig(selectedNode.id, patch)}
-                  manualReview={manualReview}
-                  onManualReviewChange={setManualReview}
-                />
+                <div className="space-y-5">
+                  <div className="flex items-center justify-end gap-2 pb-1 border-b border-border/60">
+                    <button
+                      type="button"
+                      aria-label="上移节点"
+                      disabled={!getNodeOrderState(selectedNode.id).canMoveUp}
+                      onClick={() => moveNode(selectedNode.id, "up")}
+                      className="h-7 px-2 rounded-md border border-border text-[12px] text-foreground hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      上移
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="下移节点"
+                      disabled={!getNodeOrderState(selectedNode.id).canMoveDown}
+                      onClick={() => moveNode(selectedNode.id, "down")}
+                      className="h-7 px-2 rounded-md border border-border text-[12px] text-foreground hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      下移
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="删除节点"
+                      onClick={() => removeNode(selectedNode.id)}
+                      className="h-7 px-2 rounded-md border border-destructive/30 text-[12px] text-destructive hover:bg-destructive/5"
+                    >
+                      删除
+                    </button>
+                  </div>
+                  {isPresetMode && selectedNode.formFields?.length ? (
+                    <>
+                      <DynamicFormFields
+                        fields={selectedNode.formFields}
+                        values={selectedValues as Record<string, FormValue>}
+                        onChange={handleDynamicFieldChange}
+                      />
+                      <ManualReviewToggle enabled={manualReview} onChange={setManualReview} />
+                    </>
+                  ) : (
+                    <WorkflowNodeConfigPanel
+                      key={selectedNode.id}
+                      nodeLabel={selectedNode.label}
+                      isMaterial={selectedNode.isMaterial}
+                      config={nodeConfigs[selectedNode.id] ?? {}}
+                      onConfigChange={(patch) => patchNodeConfig(selectedNode.id, patch)}
+                      manualReview={manualReview}
+                      onManualReviewChange={setManualReview}
+                    />
+                  )}
+                </div>
               )
             ) : (
               <p className="text-[13px] text-muted-foreground">点击左侧节点查看并编辑参数</p>
