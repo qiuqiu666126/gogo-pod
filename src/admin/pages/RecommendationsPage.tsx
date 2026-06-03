@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { AdminShell } from "../components/AdminShell";
-import { Card, Btn, Field, inputCls, textareaCls } from "../components/ui";
+import { AttachmentPicker } from "../components/AttachmentPicker";
+import { Card, Btn, Field, inputCls } from "../components/ui";
+import { IMAGE_FILE_TYPE, VIDEO_FILE_TYPE } from "../../shared/attachmentUtils";
 import {
   RecommendCase,
   getRecommendCaseList,
@@ -72,11 +74,6 @@ export function RecommendationsPage() {
 
     if (!draft.title?.trim() || !draft.desc?.trim() || !draft.tag?.trim() || !draft.tagColor?.trim() || !draft.img?.trim()) {
       alert("请填写所有必填字段（标题、描述、标签文字、样式、封面图）");
-      return;
-    }
-
-    if (!draft.img.startsWith("http://") && !draft.img.startsWith("https://")) {
-      alert("封面图 URL 必须是合法的 HTTP/HTTPS 链接");
       return;
     }
 
@@ -244,24 +241,25 @@ export function RecommendationsPage() {
               
               <Card title="媒体配置">
                 <div className="space-y-4">
-                  <Field label="封面图 URL">
-                    <input
-                      className={inputCls}
+                  <Field label="封面图">
+                    <AttachmentPicker
                       value={draft.img}
-                      onChange={(e) => setDraft({ ...draft, img: e.target.value })}
+                      onChange={(img) => setDraft({ ...draft, img })}
+                      accept="image/*"
+                      defaultFileType={IMAGE_FILE_TYPE}
+                      placeholder="https://... 或从附件库选择 / 上传图片"
+                      hint="支持从附件库选择或上传图片，也可手动粘贴外链"
                     />
-                    {draft.img && (
-                      <div className="mt-2 h-32 w-48 rounded overflow-hidden border border-border bg-muted">
-                        <img src={draft.img} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    )}
                   </Field>
-                  <Field label="视频播放 URL (B站 iframe 链接)">
-                    <input
-                      className={inputCls}
+                  <Field label="视频地址">
+                    <AttachmentPicker
                       value={draft.videoUrl}
-                      onChange={(e) => setDraft({ ...draft, videoUrl: e.target.value })}
-                      placeholder="//player.bilibili.com/player.html?bvid=..."
+                      onChange={(videoUrl) => setDraft({ ...draft, videoUrl })}
+                      accept="video/*"
+                      defaultFileType={VIDEO_FILE_TYPE}
+                      placeholder="//player.bilibili.com/player.html?bvid=... 或从附件库选择 / 上传视频"
+                      hint="支持附件库视频，也可粘贴 B 站 iframe 链接"
+                      uploadLabel="上传视频"
                     />
                   </Field>
                 </div>

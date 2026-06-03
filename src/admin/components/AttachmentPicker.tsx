@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import type { AttachmentDto, AttachmentListParams, AttachmentOwnerScope } from "../../shared/attachmentUtils";
 import {
+  IMAGE_FILE_TYPE,
+  VIDEO_FILE_TYPE,
   formatAttachmentMeta,
   formatAttachmentOwner,
   formatAttachmentTime,
@@ -29,6 +31,8 @@ export type AttachmentPickerProps = {
   onChange: (url: string) => void;
   disabled?: boolean;
   accept?: string;
+  defaultFileType?: string;
+  uploadLabel?: string;
   placeholder?: string;
   hint?: string;
   showUrlInput?: boolean;
@@ -55,17 +59,23 @@ function AttachmentLibraryModal({
   onClose,
   onSelect,
   scope,
+  defaultFileType = IMAGE_FILE_TYPE,
+  accept = "image/*",
+  uploadLabel,
 }: {
   open: boolean;
   onClose: () => void;
   onSelect: (url: string) => void;
   scope: "admin" | "front";
+  defaultFileType?: string;
+  accept?: string;
+  uploadLabel?: string;
 }) {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [ownerScope, setOwnerScope] = useState<AttachmentOwnerScope | "">("");
-  const [fileType, setFileType] = useState("image");
+  const [fileType, setFileType] = useState(defaultFileType);
   const [items, setItems] = useState<Awaited<ReturnType<typeof listAttachmentsByScope>>["list"]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -75,6 +85,8 @@ function AttachmentLibraryModal({
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 24;
   const isAdminScope = scope === "admin";
+  const isVideoMode = defaultFileType === VIDEO_FILE_TYPE;
+  const resolvedUploadLabel = uploadLabel || (isVideoMode ? "上传视频" : "上传图片");
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -85,7 +97,7 @@ function AttachmentLibraryModal({
         page_size: pageSize,
         keyword: keyword || undefined,
         owner_scope: isAdminScope ? ownerScope : undefined,
-        file_type: fileType || "image",
+        file_type: fileType || defaultFileType,
       });
       setItems(res.list);
       setTotal(res.total);
@@ -94,7 +106,7 @@ function AttachmentLibraryModal({
     } finally {
       setLoading(false);
     }
-  }, [scope, fileType, isAdminScope, keyword, ownerScope, page]);
+  }, [defaultFileType, scope, fileType, isAdminScope, keyword, ownerScope, page]);
 
   useEffect(() => {
     if (!open) return;
@@ -102,11 +114,11 @@ function AttachmentLibraryModal({
     setKeyword("");
     setSearchInput("");
     setOwnerScope("");
-    setFileType("image");
+    setFileType(defaultFileType);
     setError("");
     setItems([]);
     setTotal(0);
-  }, [open]);
+  }, [defaultFileType, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -190,14 +202,25 @@ function AttachmentLibraryModal({
               setPage(1);
             }}
           >
-            <option value="image">全部图片</option>
-            <option value="video">全部视频</option>
-            <option value="png">PNG</option>
-            <option value="jpg">JPG</option>
-            <option value="jpeg">JPEG</option>
-            <option value="webp">WEBP</option>
-            <option value="gif">GIF</option>
-            <option value="svg">SVG</option>
+            {isVideoMode ? (
+              <>
+                <option value="video">全部视频</option>
+                <option value="mp4">MP4</option>
+                <option value="mov">MOV</option>
+                <option value="webm">WEBM</option>
+              </>
+            ) : (
+              <>
+                <option value="image">全部图片</option>
+                <option value="video">全部视频</option>
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WEBP</option>
+                <option value="gif">GIF</option>
+                <option value="svg">SVG</option>
+              </>
+            )}
           </select>
           <Btn
             variant="secondary"
@@ -216,14 +239,14 @@ function AttachmentLibraryModal({
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <Upload size={14} /> 上传图片
+                <Upload size={14} /> {resolvedUploadLabel}
               </span>
             )}
           </Btn>
           <input
             ref={uploadInputRef}
             type="file"
-            accept="image/*"
+            accept={accept}
             className="hidden"
             onChange={(e) => {
               void handleUpload(e.target.files?.[0]);
@@ -338,6 +361,8 @@ export function AttachmentPicker({
   onChange,
   disabled = false,
   accept = "image/*",
+  defaultFileType = IMAGE_FILE_TYPE,
+  uploadLabel,
   placeholder = "https://... 或从附件库选择 / 上传图片",
   hint,
   showUrlInput = true,
@@ -362,6 +387,8 @@ export function AttachmentPicker({
   }, [value]);
 
   const canPreviewValue = valuePreviewItem ? isPreviewableAttachment(valuePreviewItem) : false;
+  const isVideoMode = defaultFileType === VIDEO_FILE_TYPE;
+  const resolvedUploadLabel = uploadLabel || (isVideoMode ? "上传视频" : "上传图片");
 
   const actionBtnCls = isDark
     ? "inline-flex items-center gap-1 rounded-md border border-[#47484d] px-3 py-2 text-[11px] text-white/90 hover:border-[#d16d41] disabled:opacity-50"
@@ -459,7 +486,7 @@ export function AttachmentPicker({
             ) : (
               <>
                 <Upload size={13} className={isDark ? "" : "text-primary"} />
-                上传图片
+                {resolvedUploadLabel}
               </>
             )}
           </button>
@@ -503,6 +530,9 @@ export function AttachmentPicker({
           setError("");
         }}
         scope={scope}
+        defaultFileType={defaultFileType}
+        accept={accept}
+        uploadLabel={uploadLabel}
       />
 
       <AttachmentPreviewModal
