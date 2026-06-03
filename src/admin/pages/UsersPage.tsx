@@ -123,8 +123,8 @@ export function UsersPage() {
     };
 
     void Promise.all([
-      getAdminUserList(params, token),
-      getAdminUserStats(params, token).catch(() => ({})),
+      getAdminUserList(params),
+      getAdminUserStats(params).catch(() => ({})),
     ])
       .then(([res, nextStats]) => {
         if (cancelled) return;
@@ -185,7 +185,6 @@ export function UsersPage() {
           phone: createForm.phone.trim(),
           remark: createForm.remark.trim(),
         },
-        token,
       );
       setModalOpen(false);
       setPage(1);

@@ -315,13 +315,6 @@ export function getFeatureConfig(type: FeatureType): FeatureConfig | undefined {
 }
 
 export async function reloadAdminAiData() {
-  let token: string;
-  try {
-    token = await ensureAdminAccessToken();
-  } catch {
-    return;
-  }
-
   featuresLoading = true;
   scenePresetsLoading = true;
   featuresError = "";
@@ -330,8 +323,8 @@ export async function reloadAdminAiData() {
 
   try {
     const [functions, presetRes] = await Promise.all([
-      listAiFunctions(token),
-      listAiScenePresets({}, token),
+      listAiFunctions(),
+      listAiScenePresets({}),
     ]);
     configs = functions.map(mapAiFunctionSummaryToConfig);
     if (!configs.some((c) => c.featureType === selectedFeature) && configs[0]) {
@@ -350,8 +343,7 @@ export async function reloadAdminAiData() {
 }
 
 export async function fetchFeatureConfigDetail(type: FeatureType): Promise<FeatureConfig> {
-  const token = await ensureAdminAccessToken();
-  const detail = await getAiFunctionDetail(type, token);
+  const detail = await getAiFunctionDetail(type);
   const mapped = mapAiFunctionDetailToConfig(detail);
   configs = configs.map((c) => (c.featureType === type ? mapped : c));
   emit();
@@ -362,8 +354,6 @@ export async function persistFeatureConfig(
   type: FeatureType,
   patch: Partial<FeatureConfig>,
 ): Promise<FeatureConfig> {
-  const token = await ensureAdminAccessToken();
-
   const current = getFeatureConfig(type);
   const merged = { ...(current ?? {}), ...patch, featureType: type } as FeatureConfig;
   const payload: AiFunctionSavePayload = {
@@ -376,7 +366,7 @@ export async function persistFeatureConfig(
     enabled: merged.enabled,
   };
 
-  const saved = await saveAiFunction(type, payload, token);
+  const saved = await saveAiFunction(type, payload);
   const mapped = mapAiFunctionDetailToConfig(saved);
   configs = configs.map((c) => (c.featureType === type ? mapped : c));
   emit();

@@ -27,7 +27,7 @@ import {
   type FormValue,
   type SceneFormPreset,
 } from "../../shared/sceneFormSchema";
-import { getAdminAccessToken, reloadAdminAiData, useAdminStore } from "../store";
+import { reloadAdminAiData, useAdminStore } from "../store";
 
 function useScenePresets() {
   return useSyncExternalStore(subscribeScenePresets, getScenePresets, getScenePresets);
@@ -90,9 +90,8 @@ export function PresetsPage() {
     setError("");
     setLoadingDetail(true);
     try {
-      const token = getAdminAccessToken();
-      if (row.dbId && token) {
-        const detail = await getAiScenePresetDetail(row.dbId, token);
+      if (row.dbId) {
+        const detail = await getAiScenePresetDetail(row.dbId);
         const full = mapAiScenePresetDetailToFormPreset(detail);
         setEditing(structuredClone(full));
         setPreviewValues(collectDefaultValues(full.formFields));
@@ -111,11 +110,6 @@ export function PresetsPage() {
 
   const save = async () => {
     if (!editing) return;
-    const token = getAdminAccessToken();
-    if (!token) {
-      setError("未登录");
-      return;
-    }
 
     setSaving(true);
     setError("");
@@ -135,9 +129,9 @@ export function PresetsPage() {
       };
 
       if (editing.dbId) {
-        await updateAiScenePreset(editing.dbId, payload, token);
+        await updateAiScenePreset(editing.dbId, payload);
       } else {
-        await createAiScenePreset(payload, token);
+        await createAiScenePreset(payload);
       }
 
       await reloadAdminAiData();
@@ -151,11 +145,6 @@ export function PresetsPage() {
 
   const removePreset = async (row: SceneFormPreset) => {
     if (!confirm(`删除「${row.label}」？`)) return;
-    const token = getAdminAccessToken();
-    if (!token) {
-      setError("未登录");
-      return;
-    }
     if (!row.dbId) {
       setError("缺少后端 ID，无法删除");
       return;
@@ -163,7 +152,7 @@ export function PresetsPage() {
 
     setError("");
     try {
-      await deleteAiScenePreset(row.dbId, token);
+      await deleteAiScenePreset(row.dbId);
       await reloadAdminAiData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除场景预设失败");

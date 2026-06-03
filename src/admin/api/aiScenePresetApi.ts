@@ -1,7 +1,6 @@
-import { http } from "../../shared/http";
 import type { FormControl } from "../../shared/sceneFormSchema";
 import type { FeatureType } from "../types";
-import { assertSuccess, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type AiScenePresetSummaryDto = {
   db_id: number;
@@ -55,58 +54,49 @@ export type AiScenePresetListParams = {
 
 export async function listAiScenePresets(
   params: AiScenePresetListParams,
-  accessToken: string,
 ): Promise<AiScenePresetListDto> {
-  const res = await http.get<AdminApiResponse<AiScenePresetListDto>>("/admin/ai-scene-preset/list", {
-    headers: await getAdminAuthHeaders(),
+  return adminHttp.get<AiScenePresetListDto>("/admin/ai-scene-preset/list", {
+    fallbackMessage: "获取场景预设列表失败",
     query: {
       feature_code: params.feature_code,
       enabled: params.enabled,
       keyword: params.keyword?.trim() || undefined,
     },
   });
-  return assertSuccess(res, "获取场景预设列表失败");
 }
 
 export async function getAiScenePresetDetail(
   dbId: number,
-  accessToken: string,
 ): Promise<AiScenePresetDetailDto> {
-  const res = await http.get<AdminApiResponse<AiScenePresetDetailDto>>(
+  return adminHttp.get<AiScenePresetDetailDto>(
     `/admin/ai-scene-preset/${dbId}`,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取场景预设详情失败" },
   );
-  return assertSuccess(res, "获取场景预设详情失败");
 }
 
 export async function createAiScenePreset(
   payload: AiScenePresetSavePayload,
-  accessToken: string,
 ): Promise<AiScenePresetDetailDto> {
-  const res = await http.post<AdminApiResponse<AiScenePresetDetailDto>>(
+  return adminHttp.post<AiScenePresetDetailDto>(
     "/admin/ai-scene-preset",
     payload,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "创建场景预设失败" },
   );
-  return assertSuccess(res, "创建场景预设失败");
 }
 
 export async function updateAiScenePreset(
   dbId: number,
   payload: AiScenePresetSavePayload,
-  accessToken: string,
 ): Promise<AiScenePresetDetailDto> {
-  const res = await http.put<AdminApiResponse<AiScenePresetDetailDto>>(
+  return adminHttp.put<AiScenePresetDetailDto>(
     `/admin/ai-scene-preset/${dbId}`,
     payload,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "保存场景预设失败" },
   );
-  return assertSuccess(res, "保存场景预设失败");
 }
 
-export async function deleteAiScenePreset(dbId: number, accessToken: string): Promise<void> {
-  const res = await http.delete<AdminApiResponse<unknown>>(`/admin/ai-scene-preset/${dbId}`, {
-    headers: await getAdminAuthHeaders(),
+export async function deleteAiScenePreset(dbId: number): Promise<void> {
+  await adminHttp.delete<unknown>(`/admin/ai-scene-preset/${dbId}`, {
+    fallbackMessage: "删除场景预设失败",
   });
-  assertSuccess(res, "删除场景预设失败");
 }

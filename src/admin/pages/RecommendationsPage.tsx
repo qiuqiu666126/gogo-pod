@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import { AdminShell } from "../components/AdminShell";
 import { Card, Btn, Field, inputCls, textareaCls } from "../components/ui";
-import { useAdminStore } from "../store";
 import {
   RecommendCase,
   getRecommendCaseList,
@@ -12,9 +11,6 @@ import {
 } from "../api/recommendCaseApi";
 
 export function RecommendationsPage() {
-  const { adminAuth } = useAdminStore();
-  const token = adminAuth?.accessToken ?? "";
-
   const [items, setItems] = useState<RecommendCase[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState<any>(null);
@@ -22,10 +18,9 @@ export function RecommendationsPage() {
   const [loading, setLoading] = useState(false);
 
   const loadItems = async (keyword?: string, cancelled = false) => {
-    if (!token) return;
     try {
       setLoading(true);
-      const data = await getRecommendCaseList(token, keyword ? { keyword } : undefined);
+      const data = await getRecommendCaseList(keyword ? { keyword } : undefined);
       if (!cancelled) {
         setItems(data);
       }
@@ -50,7 +45,7 @@ export function RecommendationsPage() {
       cancelled = true;
       clearTimeout(delayDebounceFn);
     };
-  }, [searchQuery, token]);
+  }, [searchQuery]);
 
   const handleEdit = (item: any) => {
     setEditingId(item.id);
@@ -73,7 +68,7 @@ export function RecommendationsPage() {
   };
 
   const handleSave = async () => {
-    if (!draft || !token) return;
+    if (!draft) return;
 
     if (!draft.title?.trim() || !draft.desc?.trim() || !draft.tag?.trim() || !draft.tagColor?.trim() || !draft.img?.trim()) {
       alert("请填写所有必填字段（标题、描述、标签文字、样式、封面图）");
@@ -97,7 +92,7 @@ export function RecommendationsPage() {
           img: draft.img,
           videoUrl: draft.videoUrl || "",
           sort: draft.sort || 0,
-        }, token);
+        });
         setItems([...items, savedItem]);
       } else {
         savedItem = await updateRecommendCase(draft.id, {
@@ -108,7 +103,7 @@ export function RecommendationsPage() {
           img: draft.img,
           videoUrl: draft.videoUrl || "",
           sort: draft.sort || 0,
-        }, token);
+        });
         setItems(items.map((i: RecommendCase) => (i.id === draft.id ? savedItem : i)));
       }
       setEditingId(null);
@@ -120,10 +115,9 @@ export function RecommendationsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!token) return;
     if (!confirm("确定要删除该推荐案例吗？")) return;
     try {
-      await deleteRecommendCase(id, token);
+      await deleteRecommendCase(id);
       setItems(items.filter((i: RecommendCase) => i.id !== id));
       if (editingId === id) {
         setEditingId(null);

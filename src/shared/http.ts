@@ -2,19 +2,33 @@ export type HttpQueryValue = string | number | boolean | null | undefined;
 export type HttpQuery = URLSearchParams | Record<string, HttpQueryValue | HttpQueryValue[]>;
 
 export type HttpResponseParser = "json" | "text" | "blob" | "arrayBuffer" | "raw" | "none";
+export type MaybePromise<T> = T | Promise<T>;
+export type HttpHeadersProvider = HeadersInit | (() => MaybePromise<HeadersInit | undefined>);
+
+export type ApiResponseEnvelope<T> = {
+  code: number;
+  message?: string;
+  data: T;
+};
 
 export type HttpRequestOptions = Omit<RequestInit, "body" | "headers"> & {
+  assertSuccess?: boolean;
   baseUrl?: string;
   body?: unknown;
-  headers?: HeadersInit;
+  fallbackMessage?: string;
+  headers?: HttpHeadersProvider;
   query?: HttpQuery;
   responseType?: HttpResponseParser;
+  successCode?: number;
   timeoutMs?: number;
 };
 
 export type HttpClientDefaults = {
+  assertSuccess?: boolean;
   baseUrl?: string;
-  headers?: HeadersInit;
+  fallbackMessage?: string;
+  headers?: HttpHeadersProvider;
+  successCode?: number;
   timeoutMs?: number;
 };
 
@@ -65,6 +79,48 @@ function serializeQuery(query?: HttpQuery) {
     }
   }
   return params.toString();
+}
+
+async function resolveHeaders(headers?: HttpHeadersProvider) {
+  const resolved = typeof headers === "function" ? await headers() : headers;
+  return new Headers(resolved);
+}
+
+function isApiResponseEnvelope(body: unknown): body is ApiResponseEnvelope<unknown> {
+  return Boolean(body) && typeof body === "object" && "code" in body;
+}
+
+export function assertApiResponseSuccess<T>(
+  res: ApiResponseEnvelope<T>,
+  fallbackMessage: string,
+  successCode = 200,
+): T {
+  if (res.code !== successCode) {
+    throw new Error(res.message || fallbackMessage);
+  }
+  return res.data;
+}
+
+function unwrapApiResponse(
+  body: unknown,
+  fallbackMessage: string,
+  successCode: number,
+  url: string,
+  method?: string,
+) {
+  if (!isApiResponseEnvelope(body)) return body;
+
+  if (body.code !== successCode) {
+    throw new ApiError(
+      body.message || fallbackMessage,
+      Number(body.code) || 0,
+      body,
+      url,
+      method,
+    );
+  }
+
+  return "data" in body ? body.data : undefined;
 }
 
 function buildUrl(path: string, baseUrl?: string, query?: HttpQuery) {
@@ -145,16 +201,20 @@ export function createHttpClient(defaults: HttpClientDefaults = {}) {
     const {
       baseUrl,
       body,
+      assertSuccess = defaults.assertSuccess ?? false,
       headers: requestHeaders,
+      fallbackMessage = defaults.fallbackMessage ?? "请求失败",
       query,
       responseType = "json",
+      successCode = defaults.successCode ?? 200,
       timeoutMs = defaults.timeoutMs,
       ...requestInit
     } = options;
 
     const url = buildUrl(path, baseUrl ?? defaults.baseUrl ?? getApiBase(), query);
-    const headers = new Headers(defaults.headers);
-    new Headers(requestHeaders).forEach((value, key) => headers.set(key, value));
+    const headers = await resolveHeaders(defaults.headers);
+    const extraHeaders = await resolveHeaders(requestHeaders);
+    extraHeaders.forEach((value, key) => headers.set(key, value));
 
     const normalizedBody = normalizeBody(body, headers);
     const { signal, cleanup } = createAbortSignal(requestInit.signal, timeoutMs);
@@ -170,12 +230,22 @@ export function createHttpClient(defaults: HttpClientDefaults = {}) {
 
       if (!response.ok) {
         throw new ApiError(
-          `请求失败: ${response.status}`,
+          fallbackMessage === "请求失败" ? `请求失败: ${response.status}` : fallbackMessage,
           response.status,
           parsedBody,
           url,
           requestInit.method,
         );
+      }
+
+      if (assertSuccess) {
+        return unwrapApiResponse(
+          parsedBody,
+          fallbackMessage,
+          successCode,
+          url,
+          requestInit.method,
+        ) as T;
       }
 
       return parsedBody as T;

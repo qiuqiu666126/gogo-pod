@@ -1,4 +1,4 @@
-import { http } from "../../shared/http";
+import { createHttpClient } from "../../shared/http";
 
 export type AdminLoginPayload = {
   username: string;
@@ -35,18 +35,7 @@ export type AdminUserInfo = {
   };
 };
 
-type AdminApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
-function assertSuccess<T>(res: AdminApiResponse<T>, fallbackMessage: string) {
-  if (res.code !== 200) {
-    throw new Error(res.message || fallbackMessage);
-  }
-  return res.data;
-}
+const passportHttp = createHttpClient({ assertSuccess: true });
 
 function authHeaders(accessToken: string) {
   return {
@@ -54,40 +43,38 @@ function authHeaders(accessToken: string) {
   };
 }
 
-export async function loginAdmin(payload: AdminLoginPayload): Promise<AdminLoginData> {
-  const res = await http.post<AdminApiResponse<AdminLoginData>>(
-    "/admin/passport/login",
-    payload,
-  );
+function authOptions(accessToken: string, fallbackMessage: string) {
+  return {
+    fallbackMessage,
+    headers: authHeaders(accessToken),
+  };
+}
 
-  return assertSuccess(res, "登录失败");
+export async function loginAdmin(payload: AdminLoginPayload): Promise<AdminLoginData> {
+  return passportHttp.post<AdminLoginData>("/admin/passport/login", payload, {
+    fallbackMessage: "登录失败",
+  });
 }
 
 export async function refreshAdminToken(refreshToken: string): Promise<AdminLoginData> {
-  const res = await http.post<AdminApiResponse<AdminLoginData>>(
+  return passportHttp.post<AdminLoginData>(
     "/admin/passport/refresh",
     undefined,
-    { headers: authHeaders(refreshToken) },
+    authOptions(refreshToken, "刷新登录状态失败"),
   );
-
-  return assertSuccess(res, "刷新登录状态失败");
 }
 
 export async function getAdminInfo(accessToken: string): Promise<AdminUserInfo> {
-  const res = await http.get<AdminApiResponse<AdminUserInfo>>(
+  return passportHttp.get<AdminUserInfo>(
     "/admin/passport/getInfo",
-    { headers: authHeaders(accessToken) },
+    authOptions(accessToken, "获取用户信息失败"),
   );
-
-  return assertSuccess(res, "获取用户信息失败");
 }
 
 export async function logoutAdmin(accessToken: string): Promise<void> {
-  const res = await http.post<AdminApiResponse<unknown>>(
+  await passportHttp.post<unknown>(
     "/admin/passport/logout",
     undefined,
-    { headers: authHeaders(accessToken) },
+    authOptions(accessToken, "退出登录失败"),
   );
-
-  assertSuccess(res, "退出登录失败");
 }

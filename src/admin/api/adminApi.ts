@@ -1,8 +1,9 @@
-export type AdminApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
+import {
+  createHttpClient,
+  type ApiResponseEnvelope,
+} from "../../shared/http";
+
+export type AdminApiResponse<T> = ApiResponseEnvelope<T>;
 
 export function authHeaders(accessToken: string) {
   return {
@@ -17,9 +18,7 @@ export async function getAdminAuthHeaders() {
   return authHeaders(token);
 }
 
-export function assertSuccess<T>(res: AdminApiResponse<T>, fallbackMessage: string): T {
-  if (res.code !== 200) {
-    throw new Error(res.message || fallbackMessage);
-  }
-  return res.data;
-}
+export const adminHttp = createHttpClient({
+  assertSuccess: true,
+  headers: getAdminAuthHeaders,
+});

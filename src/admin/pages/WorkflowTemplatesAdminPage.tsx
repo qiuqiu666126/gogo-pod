@@ -24,7 +24,6 @@ import {
 } from "../api/workflowMappers";
 import { AdminShell } from "../components/AdminShell";
 import { Badge, Btn, Card, Field, inputCls } from "../components/ui";
-import { getAdminAccessToken } from "../store";
 
 export function WorkflowTemplatesAdminPage() {
   const [categories, setCategories] = useState<WorkflowCategoryOption[]>([]);
@@ -39,21 +38,17 @@ export function WorkflowTemplatesAdminPage() {
   const [stepOptionGroups, setStepOptionGroups] = useState<WorkflowStepOptionGroupDto[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const token = getAdminAccessToken();
-
   const loadList = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     setError("");
     try {
       const [meta, listRes] = await Promise.all([
-        getWorkflowTemplateMeta(token),
+        getWorkflowTemplateMeta(),
         listWorkflowTemplates(
           {
             category_code: categoryFilter || undefined,
             keyword: search.trim() || undefined,
           },
-          token,
         ),
       ]);
       setCategories(meta.categories);
@@ -63,7 +58,7 @@ export function WorkflowTemplatesAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, categoryFilter, search]);
+  }, [categoryFilter, search]);
 
   useEffect(() => {
     void loadList();
@@ -75,15 +70,13 @@ export function WorkflowTemplatesAdminPage() {
   );
 
   const loadStepOptions = useCallback(async () => {
-    if (!token) return;
-    const res = await getWorkflowStepOptions(token);
+    const res = await getWorkflowStepOptions();
     setStepOptionGroups(res.groups);
-  }, [token]);
+  }, []);
 
   const resolvePreset = useCallback(
     async (scenePresetId: number): Promise<WorkflowStepDraft> => {
-      if (!token) throw new Error("未登录");
-      const schema = await getWorkflowStepSchema(scenePresetId, token);
+      const schema = await getWorkflowStepSchema(scenePresetId);
       return {
         scenePresetId: schema.scenePresetId,
         featureCode: schema.featureCode,
@@ -94,7 +87,7 @@ export function WorkflowTemplatesAdminPage() {
         manualReview: false,
       };
     },
-    [token],
+    [],
   );
 
   const openNew = () => {
@@ -110,12 +103,11 @@ export function WorkflowTemplatesAdminPage() {
   };
 
   const openEdit = async (row: WorkflowTemplateSummaryDto) => {
-    if (!token) return;
     setLoadingDetail(true);
     setError("");
     try {
       const [detail] = await Promise.all([
-        getWorkflowTemplateDetail(row.id, token),
+        getWorkflowTemplateDetail(row.id),
         loadStepOptions(),
       ]);
       setEditing(mapWorkflowDetailToDraft(detail));
@@ -127,7 +119,7 @@ export function WorkflowTemplatesAdminPage() {
   };
 
   const save = async () => {
-    if (!editing || !editing.name.trim() || !token) return;
+    if (!editing || !editing.name.trim()) return;
     if (editing.workflowSteps.length === 0) {
       setError("请至少配置一个工作流步骤");
       return;
@@ -138,9 +130,9 @@ export function WorkflowTemplatesAdminPage() {
     try {
       const payload = buildWorkflowTemplateSavePayload(editing);
       if (editing.id) {
-        await updateWorkflowTemplate(editing.id, payload, token);
+        await updateWorkflowTemplate(editing.id, payload);
       } else {
-        await createWorkflowTemplate(payload, token);
+        await createWorkflowTemplate(payload);
       }
       setEditing(null);
       setWorkflowBuilderOpen(false);
@@ -153,11 +145,10 @@ export function WorkflowTemplatesAdminPage() {
   };
 
   const handleDelete = async (row: WorkflowTemplateSummaryDto) => {
-    if (!token) return;
     if (!confirm(`删除官方模版「${row.name}」？`)) return;
     setError("");
     try {
-      await deleteWorkflowTemplate(row.id, token);
+      await deleteWorkflowTemplate(row.id);
       await loadList();
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除工作流模版失败");

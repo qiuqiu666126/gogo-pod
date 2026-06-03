@@ -1,6 +1,5 @@
-import { http } from "../../shared/http";
 import type { FeatureCategory, FeatureType } from "../types";
-import { assertSuccess, authHeaders, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
+import { adminHttp } from "./adminApi";
 
 export type AiFunctionSummaryDto = {
   id: number;
@@ -45,53 +44,45 @@ export type AiFunctionSavePayload = {
   enabled?: boolean;
 };
 
-export async function listAiFunctions(accessToken: string): Promise<AiFunctionSummaryDto[]> {
-  const res = await http.get<AdminApiResponse<AiFunctionSummaryDto[]>>("/admin/ai-function/list", {
-    headers: await getAdminAuthHeaders(),
+export async function listAiFunctions(): Promise<AiFunctionSummaryDto[]> {
+  return adminHttp.get<AiFunctionSummaryDto[]>("/admin/ai-function/list", {
+    fallbackMessage: "获取 AI 功能列表失败",
   });
-  return assertSuccess(res, "获取 AI 功能列表失败");
 }
 
-export async function getAiFunctionMeta(accessToken: string): Promise<AiFunctionMetaDto> {
-  const res = await http.get<AdminApiResponse<AiFunctionMetaDto>>("/admin/ai-function/meta", {
-    headers: await getAdminAuthHeaders(),
+export async function getAiFunctionMeta(): Promise<AiFunctionMetaDto> {
+  return adminHttp.get<AiFunctionMetaDto>("/admin/ai-function/meta", {
+    fallbackMessage: "获取 AI 功能元数据失败",
   });
-  return assertSuccess(res, "获取 AI 功能元数据失败");
 }
 
 export async function getAiFunctionDetail(
   code: FeatureType,
-  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  const res = await http.get<AdminApiResponse<AiFunctionDetailDto>>(
+  return adminHttp.get<AiFunctionDetailDto>(
     `/admin/ai-function/${encodeURIComponent(code)}`,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "获取 AI 功能详情失败" },
   );
-  return assertSuccess(res, "获取 AI 功能详情失败");
 }
 
 export async function saveAiFunction(
   code: FeatureType,
   payload: AiFunctionSavePayload,
-  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  const res = await http.put<AdminApiResponse<AiFunctionDetailDto>>(
+  return adminHttp.put<AiFunctionDetailDto>(
     `/admin/ai-function/${encodeURIComponent(code)}`,
     payload,
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "保存 AI 功能配置失败" },
   );
-  return assertSuccess(res, "保存 AI 功能配置失败");
 }
 
 export async function updateAiFunctionStatus(
   code: FeatureType,
   enabled: boolean,
-  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  const res = await http.patch<AdminApiResponse<AiFunctionDetailDto>>(
+  return adminHttp.patch<AiFunctionDetailDto>(
     `/admin/ai-function/${encodeURIComponent(code)}/status`,
     { enabled },
-    { headers: await getAdminAuthHeaders() },
+    { fallbackMessage: "更新 AI 功能状态失败" },
   );
-  return assertSuccess(res, "更新 AI 功能状态失败");
 }
