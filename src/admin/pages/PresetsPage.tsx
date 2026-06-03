@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { AdminShell } from "../components/AdminShell";
 import { FormControlListEditor } from "../components/FormControlEditor";
-import { Badge, Btn, Card, Field, inputCls, textareaCls } from "../components/ui";
+import { Badge, Btn, Card, Field, fieldInputCls, inputCls, textareaCls } from "../components/ui";
 import type { FeatureType } from "../types";
 import { DynamicFormFields, previewFieldDomId } from "../../app/components/DynamicFormFields";
 import { CrackScenePresetPreview } from "../../app/CrackImageModal";
@@ -33,6 +33,35 @@ function useScenePresets() {
   return useSyncExternalStore(subscribeScenePresets, getScenePresets, getScenePresets);
 }
 
+type PresetFormField = "featureType" | "sceneKey" | "label";
+type PresetFieldErrors = Partial<Record<PresetFormField, string>>;
+
+function validatePresetForm(editing: SceneFormPreset): PresetFieldErrors {
+  const errors: PresetFieldErrors = {};
+  if (!editing.featureType?.trim()) {
+    errors.featureType = "请选择所属功能";
+  }
+  if (!editing.sceneKey.trim()) {
+    errors.sceneKey = "请填写场景 key";
+  }
+  if (!editing.label.trim()) {
+    errors.label = "请填写管理名称";
+  }
+  return errors;
+}
+
+function mapApiErrorToFields(message: string): PresetFieldErrors {
+  const errors: PresetFieldErrors = {};
+  if (/场景\s*key|scene_key|sceneKey/i.test(message)) {
+    errors.sceneKey = message;
+  } else if (/管理名称|\blabel\b/i.test(message)) {
+    errors.label = message;
+  } else if (/所属功能|feature_code|featureCode/i.test(message)) {
+    errors.featureType = message;
+  }
+  return errors;
+}
+
 export function PresetsPage() {
   const { configs, scenePresetsLoading, scenePresetsError } = useAdminStore();
   const allPresets = useScenePresets();
@@ -44,6 +73,8 @@ export function PresetsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<PresetFieldErrors>({});
   const previewPaneRef = useRef<HTMLDivElement | null>(null);
 
   const featureOptions = useMemo(
@@ -67,6 +98,8 @@ export function PresetsPage() {
   );
 
   const openNew = () => {
+    setFormError("");
+    setFieldErrors({});
     setEditing({
       id: createPresetId(),
       featureType: filterType,
@@ -88,6 +121,8 @@ export function PresetsPage() {
 
   const openEdit = async (row: SceneFormPreset) => {
     setError("");
+    setFormError("");
+    setFieldErrors({});
     setLoadingDetail(true);
     try {
       const token = getAdminAccessToken();
@@ -113,12 +148,20 @@ export function PresetsPage() {
     if (!editing) return;
     const token = getAdminAccessToken();
     if (!token) {
-      setError("未登录");
+      setFormError("未登录");
+      return;
+    }
+
+    const validationErrors = validatePresetForm(editing);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setFormError("请完善必填项后再保存");
       return;
     }
 
     setSaving(true);
-    setError("");
+    setFormError("");
+    setFieldErrors({});
     try {
       const payload = {
         id: editing.id,
@@ -142,8 +185,13 @@ export function PresetsPage() {
 
       await reloadAdminAiData();
       setEditing(null);
+      setFormError("");
+      setFieldErrors({});
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存场景预设失败");
+      const message = err instanceof Error ? err.message : "保存场景预设失败";
+      const apiFieldErrors = mapApiErrorToFields(message);
+      setFieldErrors(apiFieldErrors);
+      setFormError(message);
     } finally {
       setSaving(false);
     }
@@ -221,7 +269,7 @@ export function PresetsPage() {
       subtitle="配置每个功能、每个场景的前台表单与提示词（AI 功能配置只管模型）"
     >
       <div className="p-6 space-y-4">
-        {(scenePresetsError || error) && (
+        {(!editing && (scenePresetsError || error)) && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
             {error || scenePresetsError}
           </div>
@@ -331,7 +379,14 @@ export function PresetsPage() {
                   {previewCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
                   {previewCollapsed ? "展开预览" : "收起预览"}
                 </button>
-                <Btn variant="secondary" onClick={() => setEditing(null)}>
+                <Btn
+                  variant="secondary"
+                  onClick={() => {
+                    setEditing(null);
+                    setFormError("");
+                    setFieldErrors({});
+                  }}
+                >
                   取消
                 </Btn>
                 <Btn onClick={() => void save()} disabled={saving}>
@@ -341,16 +396,29 @@ export function PresetsPage() {
             </div>
 
             <div className="flex-1 overflow-hidden p-5">
+              {formError && (
+                <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
+                  {formError}
+                </div>
+              )}
+
               <div className={`grid h-full gap-5 ${previewCollapsed ? "xl:grid-cols-1" : "xl:grid-cols-[minmax(0,1fr)_420px]"}`}>
                 <div className="space-y-4 overflow-y-auto pr-1">
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="所属功能">
+                    <Field label="所属功能" required error={fieldErrors.featureType}>
                       <select
-                        className={inputCls}
+                        className={fieldInputCls(Boolean(fieldErrors.featureType))}
                         value={editing.featureType}
-                        onChange={(e) =>
-                          setEditing({ ...editing, featureType: e.target.value as FeatureType })
-                        }
+                        onChange={(e) => {
+                          const featureType = e.target.value as FeatureType;
+                          setEditing({ ...editing, featureType });
+                          setFieldErrors((prev) => {
+                            if (!prev.featureType) return prev;
+                            const next = { ...prev };
+                            delete next.featureType;
+                            return next;
+                          });
+                        }}
                       >
                         {featureOptions.map((item) => (
                           <option key={item.code} value={item.code}>
@@ -359,38 +427,62 @@ export function PresetsPage() {
                         ))}
                       </select>
                     </Field>
-                    <Field label="场景 key（前台 Tab）">
+                    <Field
+                      label="场景 key（前台 Tab）"
+                      required
+                      hint="前台场景 Tab 的唯一标识，如：默认、model、手机壳"
+                      error={fieldErrors.sceneKey}
+                    >
                       <input
-                        className={inputCls}
+                        className={fieldInputCls(Boolean(fieldErrors.sceneKey))}
                         placeholder="默认 / model / 手机壳"
                         value={editing.sceneKey}
-                        onChange={(e) => setEditing({ ...editing, sceneKey: e.target.value })}
+                        onChange={(e) => {
+                          setEditing({ ...editing, sceneKey: e.target.value });
+                          setFieldErrors((prev) => {
+                            if (!prev.sceneKey) return prev;
+                            const next = { ...prev };
+                            delete next.sceneKey;
+                            return next;
+                          });
+                        }}
                       />
                     </Field>
-                    <Field label="场景显示名">
+                    <Field label="场景显示名" hint="前台 Tab 展示名称，留空则与场景 key 相同">
                       <input
                         className={inputCls}
+                        placeholder="可与场景 key 相同"
                         value={editing.sceneLabel}
                         onChange={(e) => setEditing({ ...editing, sceneLabel: e.target.value })}
                       />
                     </Field>
-                    <Field label="preset_key">
+                    <Field label="preset_key" hint="可选，留空则默认使用场景 key">
                       <input
                         className={inputCls}
+                        placeholder="留空则使用场景 key"
                         value={editing.presetKey}
                         onChange={(e) => setEditing({ ...editing, presetKey: e.target.value })}
                       />
                     </Field>
-                    <Field label="管理名称">
+                    <Field label="管理名称" required error={fieldErrors.label}>
                       <input
-                        className={inputCls}
+                        className={fieldInputCls(Boolean(fieldErrors.label))}
+                        placeholder="后台列表中显示的名称"
                         value={editing.label}
-                        onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                        onChange={(e) => {
+                          setEditing({ ...editing, label: e.target.value });
+                          setFieldErrors((prev) => {
+                            if (!prev.label) return prev;
+                            const next = { ...prev };
+                            delete next.label;
+                            return next;
+                          });
+                        }}
                       />
                     </Field>
                   </div>
 
-                  <Field label="场景基础提示词">
+                  <Field label="场景基础提示词" hint="可选，作为该场景提示词的基础片段">
                     <textarea
                       className={textareaCls}
                       value={editing.promptTemplate}

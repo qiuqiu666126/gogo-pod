@@ -27,25 +27,39 @@ export function Card({
 export function Field({
   label,
   hint,
+  required,
+  error,
   children,
   className = "",
 }: {
   label: string;
   hint?: string;
+  required?: boolean;
+  error?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <label className={`block space-y-1.5 ${className}`}>
-      <span className="text-[13px] font-medium text-foreground">{label}</span>
+      <span className="text-[13px] font-medium text-foreground">
+        {label}
+        {required ? <span className="text-destructive ml-0.5">*</span> : null}
+      </span>
       {hint && <p className="text-[11px] text-muted-foreground -mt-0.5">{hint}</p>}
       {children}
+      {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
     </label>
   );
 }
 
 export const inputCls =
   "w-full rounded-lg border border-border bg-input-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40";
+
+export function fieldInputCls(hasError?: boolean) {
+  return hasError
+    ? `${inputCls} border-destructive focus:border-destructive focus:ring-destructive/30`
+    : inputCls;
+}
 
 export const textareaCls = `${inputCls} min-h-[88px] resize-y font-mono text-[12px] leading-relaxed`;
 
