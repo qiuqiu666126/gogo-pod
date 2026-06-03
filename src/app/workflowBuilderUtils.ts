@@ -1,9 +1,16 @@
+import type { FormControl } from "../shared/sceneFormSchema";
+import type { WorkflowStepDraft } from "../admin/api/workflowMappers";
 import type { WorkflowNodeConfigMap } from "./workflowNodeConfigPanels";
 
 export type WorkflowBuilderNode = {
   id: string;
   label: string;
   isMaterial?: boolean;
+  scenePresetId?: number;
+  featureCode?: string;
+  featureName?: string;
+  presetLabel?: string;
+  formFields?: FormControl[];
 };
 
 export function normalizeWorkflowBuilderSteps(steps: string[]): string[] {
@@ -48,5 +55,67 @@ export function nodeConfigsToStepConfigs(
     const cfg = nodeConfigs[node.id];
     if (cfg && Object.keys(cfg).length > 0) out[node.label] = { ...cfg };
   }
+  return out;
+}
+
+const MATERIAL_NODE: WorkflowBuilderNode = {
+  id: "node-material",
+  label: "添加素材",
+  isMaterial: true,
+};
+
+export function workflowStepsToNodes(steps: WorkflowStepDraft[]): WorkflowBuilderNode[] {
+  const pipeline = steps.map((step, index) => ({
+    id: `node-${step.scenePresetId}-${index}`,
+    label: step.featureName,
+    scenePresetId: step.scenePresetId,
+    featureCode: step.featureCode,
+    featureName: step.featureName,
+    presetLabel: step.presetLabel,
+    formFields: step.formFields,
+  }));
+  return [MATERIAL_NODE, ...pipeline];
+}
+
+export function nodesToWorkflowSteps(
+  nodes: WorkflowBuilderNode[],
+  nodeConfigs: WorkflowNodeConfigMap,
+): WorkflowStepDraft[] {
+  return nodes
+    .filter((node) => !node.isMaterial && node.scenePresetId)
+    .map((node) => {
+      const cfg = nodeConfigs[node.id] ?? {};
+      const manualReview = Boolean(cfg.manualReview);
+      const nodeConfig = { ...cfg };
+      delete nodeConfig.manualReview;
+
+      return {
+        scenePresetId: node.scenePresetId!,
+        featureCode: node.featureCode ?? "",
+        featureName: node.featureName ?? node.label,
+        presetLabel: node.presetLabel ?? "",
+        formFields: node.formFields ?? [],
+        nodeConfig,
+        manualReview,
+      };
+    });
+}
+
+export function applyWorkflowStepsToNodeConfigs(
+  nodes: WorkflowBuilderNode[],
+  steps: WorkflowStepDraft[],
+): WorkflowNodeConfigMap {
+  const out: WorkflowNodeConfigMap = {};
+  const pipelineNodes = nodes.filter((node) => !node.isMaterial);
+
+  steps.forEach((step, index) => {
+    const node = pipelineNodes[index];
+    if (!node) return;
+    out[node.id] = {
+      ...step.nodeConfig,
+      ...(step.manualReview ? { manualReview: true } : {}),
+    };
+  });
+
   return out;
 }

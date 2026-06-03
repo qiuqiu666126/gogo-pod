@@ -32,6 +32,7 @@ export type FeatureConfig = {
   provider: string;
   apiBaseUrl: string;
   apiKey: string;
+  hasApiKey: boolean;
   systemPrompt: string;
   userPromptTemplate: string;
   defaultParams: Record<string, unknown>;

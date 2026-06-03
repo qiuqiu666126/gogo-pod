@@ -1,5 +1,11 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronRight, PenTool, Video, X } from "lucide-react";
+import type { WorkflowStepDraft } from "../admin/api/workflowMappers";
+import type { WorkflowStepOptionGroupDto } from "../admin/api/aiWorkflowTemplateApi";
+import type { FormValue } from "../shared/sceneFormSchema";
+import { applyOptionChange } from "../shared/sceneFormSchema";
+import { DynamicFormFields } from "./components/DynamicFormFields";
+import { Switch } from "./components/ui/switch";
 import { WORKFLOW_DESIGN_ADD_ITEMS, WORKFLOW_VIDEO_ADD_ITEMS } from "./workflowBuilderAddMenu";
 import {
   WorkflowNodeConfigPanel,
@@ -7,17 +13,21 @@ import {
 } from "./workflowNodeConfigPanels";
 import {
   applyStepConfigsToNodeConfigs,
+  applyWorkflowStepsToNodeConfigs,
   nodeConfigsToStepConfigs,
+  nodesToWorkflowSteps,
   pipelineStepsFromNodes,
   stepsToNodes,
+  workflowStepsToNodes,
   type WorkflowBuilderNode,
 } from "./workflowBuilderUtils";
 
 export type { WorkflowBuilderNode } from "./workflowBuilderUtils";
 
 export type WorkflowBuilderSavePayload = {
-  steps: string[];
-  stepConfigs: Record<string, Record<string, unknown>>;
+  steps?: string[];
+  stepConfigs?: Record<string, Record<string, unknown>>;
+  workflowSteps?: WorkflowStepDraft[];
 };
 
 function Connector() {
@@ -32,7 +42,27 @@ function Connector() {
   );
 }
 
-function AddNodeMenu({
+function ManualReviewToggle({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 pt-2 border-t border-border/60">
+      <div>
+        <div className="text-[13px] font-medium text-foreground">人工审核</div>
+        <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
+          该节点任务结束后，进行人工审核与验收
+        </p>
+      </div>
+      <Switch checked={enabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function LegacyAddNodeMenu({
   open,
   onClose,
   onPick,
@@ -100,9 +130,79 @@ function AddNodeMenu({
   );
 }
 
+function PresetAddNodeMenu({
+  open,
+  onClose,
+  groups,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  groups: WorkflowStepOptionGroupDto[];
+  onPick: (presetId: number) => void;
+}) {
+  const menuId = useId();
+
+  if (!open) return null;
+
+  return (
+    <div
+      id={menuId}
+      role="menu"
+      className="absolute left-1/2 top-full z-30 mt-2 w-[min(320px,92vw)] -translate-x-1/2 rounded-xl border border-border bg-card shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/80 bg-muted/30">
+        <span className="text-[12px] font-medium text-muted-foreground">选择场景预设</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="关闭"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="max-h-[min(420px,56vh)] overflow-y-auto py-1">
+        {groups.length === 0 ? (
+          <p className="px-4 py-6 text-[13px] text-muted-foreground text-center">
+            暂无可用场景预设，请先在「场景预设」中配置
+          </p>
+        ) : (
+          groups.map((group) => (
+            <div key={group.featureCode} className="py-1">
+              <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-primary uppercase tracking-wide">
+                {group.featureName}
+              </div>
+              {group.presets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => onPick(preset.id)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-primary/10 transition-colors"
+                >
+                  <div className="text-[13px] font-medium text-foreground">{preset.label}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    {preset.sceneLabel || preset.sceneKey}
+                  </div>
+                </button>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function WorkflowBuilderEditor({
+  mode = "legacy",
   initialSteps,
   initialStepConfigs,
+  initialWorkflowSteps,
+  stepOptionGroups = [],
+  onResolvePreset,
   templateName,
   onTemplateNameChange,
   showTemplateNameField = true,
@@ -112,8 +212,12 @@ export function WorkflowBuilderEditor({
   onSave,
   className = "h-full min-h-0",
 }: {
-  initialSteps: string[];
+  mode?: "legacy" | "preset";
+  initialSteps?: string[];
   initialStepConfigs?: Record<string, Record<string, unknown>>;
+  initialWorkflowSteps?: WorkflowStepDraft[];
+  stepOptionGroups?: WorkflowStepOptionGroupDto[];
+  onResolvePreset?: (scenePresetId: number) => Promise<WorkflowStepDraft>;
   templateName?: string;
   onTemplateNameChange?: (name: string) => void;
   showTemplateNameField?: boolean;
@@ -123,7 +227,10 @@ export function WorkflowBuilderEditor({
   onSave?: (payload: WorkflowBuilderSavePayload) => void;
   className?: string;
 }) {
-  const initialNodes = stepsToNodes(initialSteps);
+  const isPresetMode = mode === "preset";
+  const initialNodes = isPresetMode
+    ? workflowStepsToNodes(initialWorkflowSteps ?? [])
+    : stepsToNodes(initialSteps ?? []);
 
   const [nodes, setNodes] = useState<WorkflowBuilderNode[]>(() => initialNodes);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
@@ -132,8 +239,11 @@ export function WorkflowBuilderEditor({
   });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [nodeConfigs, setNodeConfigs] = useState<WorkflowNodeConfigMap>(() =>
-    applyStepConfigsToNodeConfigs(initialNodes, initialStepConfigs),
+    isPresetMode
+      ? applyWorkflowStepsToNodeConfigs(initialNodes, initialWorkflowSteps ?? [])
+      : applyStepConfigsToNodeConfigs(initialNodes, initialStepConfigs),
   );
+  const [addingPreset, setAddingPreset] = useState(false);
   const addMenuWrapRef = useRef<HTMLDivElement>(null);
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
@@ -163,14 +273,50 @@ export function WorkflowBuilderEditor({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [addMenuOpen]);
 
-  const addNode = (label: string) => {
+  const addLegacyNode = (label: string) => {
     const id = `node-${crypto.randomUUID()}`;
     setNodes((prev) => [...prev, { id, label }]);
     setSelectedId(id);
     setAddMenuOpen(false);
   };
 
+  const addPresetNode = async (scenePresetId: number) => {
+    if (!onResolvePreset) return;
+    setAddingPreset(true);
+    try {
+      const step = await onResolvePreset(scenePresetId);
+      const id = `node-${scenePresetId}-${crypto.randomUUID()}`;
+      setNodes((prev) => [
+        ...prev,
+        {
+          id,
+          label: step.featureName,
+          scenePresetId: step.scenePresetId,
+          featureCode: step.featureCode,
+          featureName: step.featureName,
+          presetLabel: step.presetLabel,
+          formFields: step.formFields,
+        },
+      ]);
+      setNodeConfigs((prev) => ({
+        ...prev,
+        [id]: {
+          ...step.nodeConfig,
+          ...(step.manualReview ? { manualReview: true } : {}),
+        },
+      }));
+      setSelectedId(id);
+      setAddMenuOpen(false);
+    } finally {
+      setAddingPreset(false);
+    }
+  };
+
   const handleSave = () => {
+    if (isPresetMode) {
+      onSave?.({ workflowSteps: nodesToWorkflowSteps(nodes, nodeConfigs) });
+      return;
+    }
     onSave?.({
       steps: pipelineStepsFromNodes(nodes),
       stepConfigs: nodeConfigsToStepConfigs(nodes, nodeConfigs),
@@ -180,8 +326,25 @@ export function WorkflowBuilderEditor({
   const configTitle = selectedNode
     ? selectedNode.isMaterial
       ? "添加素材"
-      : `配置${selectedNode.label}参数`
+      : isPresetMode && selectedNode.presetLabel
+        ? `配置${selectedNode.featureName} · ${selectedNode.presetLabel}`
+        : `配置${selectedNode.label}参数`
     : "节点配置";
+
+  const selectedValues = selectedNode
+    ? (nodeConfigs[selectedNode.id] ?? {})
+    : {};
+
+  const handleDynamicFieldChange = (key: string, value: FormValue) => {
+    if (!selectedNode?.formFields?.length) return;
+    setNodeConfigs((prev) => {
+      const current = prev[selectedNode.id] ?? {};
+      return {
+        ...prev,
+        [selectedNode.id]: applyOptionChange(selectedNode.formFields!, current, key, value),
+      };
+    });
+  };
 
   return (
     <div className={`flex flex-col bg-background text-foreground ${className}`}>
@@ -208,7 +371,8 @@ export function WorkflowBuilderEditor({
           <button
             type="button"
             onClick={handleSave}
-            className="h-8 px-4 rounded-md bg-primary text-white text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-[0_0_16px_rgba(242,100,25,0.25)] shrink-0"
+            disabled={addingPreset}
+            className="h-8 px-4 rounded-md bg-primary text-white text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-[0_0_16px_rgba(242,100,25,0.25)] shrink-0 disabled:opacity-60"
           >
             {saveLabel}
           </button>
@@ -269,17 +433,31 @@ export function WorkflowBuilderEditor({
                 <button
                   type="button"
                   onClick={() => setAddMenuOpen((v) => !v)}
+                  disabled={addingPreset}
                   aria-expanded={addMenuOpen}
                   aria-haspopup="menu"
                   className={`w-7 h-7 rounded-full border text-[16px] leading-none flex items-center justify-center transition-colors ${
                     addMenuOpen
                       ? "border-primary bg-primary text-white shadow-[0_0_16px_rgba(242,100,25,0.4)]"
                       : "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
-                  }`}
+                  } disabled:opacity-60`}
                 >
                   +
                 </button>
-                <AddNodeMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} onPick={addNode} />
+                {isPresetMode ? (
+                  <PresetAddNodeMenu
+                    open={addMenuOpen}
+                    onClose={() => setAddMenuOpen(false)}
+                    groups={stepOptionGroups}
+                    onPick={(presetId) => void addPresetNode(presetId)}
+                  />
+                ) : (
+                  <LegacyAddNodeMenu
+                    open={addMenuOpen}
+                    onClose={() => setAddMenuOpen(false)}
+                    onPick={addLegacyNode}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -291,15 +469,30 @@ export function WorkflowBuilderEditor({
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-none">
             {selectedNode ? (
-              <WorkflowNodeConfigPanel
-                key={selectedNode.id}
-                nodeLabel={selectedNode.label}
-                isMaterial={selectedNode.isMaterial}
-                config={nodeConfigs[selectedNode.id] ?? {}}
-                onConfigChange={(patch) => patchNodeConfig(selectedNode.id, patch)}
-                manualReview={manualReview}
-                onManualReviewChange={setManualReview}
-              />
+              selectedNode.isMaterial ? (
+                <p className="text-[13px] text-muted-foreground leading-relaxed">
+                  工作流起始节点。用户创建任务时在此步骤上传或选择素材，后续节点将基于素材依次执行。
+                </p>
+              ) : isPresetMode && selectedNode.formFields?.length ? (
+                <div className="space-y-5">
+                  <DynamicFormFields
+                    fields={selectedNode.formFields}
+                    values={selectedValues as Record<string, FormValue>}
+                    onChange={handleDynamicFieldChange}
+                  />
+                  <ManualReviewToggle enabled={manualReview} onChange={setManualReview} />
+                </div>
+              ) : (
+                <WorkflowNodeConfigPanel
+                  key={selectedNode.id}
+                  nodeLabel={selectedNode.label}
+                  isMaterial={selectedNode.isMaterial}
+                  config={nodeConfigs[selectedNode.id] ?? {}}
+                  onConfigChange={(patch) => patchNodeConfig(selectedNode.id, patch)}
+                  manualReview={manualReview}
+                  onManualReviewChange={setManualReview}
+                />
+              )
             ) : (
               <p className="text-[13px] text-muted-foreground">点击左侧节点查看并编辑参数</p>
             )}

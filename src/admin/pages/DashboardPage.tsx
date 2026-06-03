@@ -16,7 +16,7 @@ export function DashboardPage() {
   const stats = getDashboardStats();
   const { configs } = useAdminStore();
 
-  const needKey = configs.filter((c) => c.enabled && !c.apiKey.trim());
+  const needKey = configs.filter((c) => c.enabled && !c.hasApiKey);
 
   return (
     <AdminShell title="概览" subtitle="作图与视频 AI 能力配置总览">

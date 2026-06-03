@@ -1,33 +1,49 @@
-import { ArrowLeft } from "lucide-react";
 import {
   WorkflowBuilderEditor,
   type WorkflowBuilderSavePayload,
 } from "./WorkflowBuilderEditor";
+import type { WorkflowStepDraft } from "../admin/api/workflowMappers";
+import type { WorkflowStepOptionGroupDto } from "../admin/api/aiWorkflowTemplateApi";
+import { ArrowLeft } from "lucide-react";
 
 export function WorkflowBuilderModal({
   open,
   templateName,
+  mode = "legacy",
   initialSteps,
   initialStepConfigs,
+  initialWorkflowSteps,
+  stepOptionGroups,
+  onResolvePreset,
   onClose,
   onConfirm,
 }: {
   open: boolean;
   templateName: string;
-  initialSteps: string[];
+  mode?: "legacy" | "preset";
+  initialSteps?: string[];
   initialStepConfigs?: Record<string, Record<string, unknown>>;
+  initialWorkflowSteps?: WorkflowStepDraft[];
+  stepOptionGroups?: WorkflowStepOptionGroupDto[];
+  onResolvePreset?: (scenePresetId: number) => Promise<WorkflowStepDraft>;
   onClose: () => void;
   onConfirm: (payload: WorkflowBuilderSavePayload) => void;
 }) {
   if (!open) return null;
 
+  const builderKey = isPresetModeKey(mode, initialWorkflowSteps, initialSteps);
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background">
       <WorkflowBuilderEditor
-        key={`${templateName}-${initialSteps.join("|")}`}
+        key={builderKey}
+        mode={mode}
         className="h-full"
         initialSteps={initialSteps}
         initialStepConfigs={initialStepConfigs}
+        initialWorkflowSteps={initialWorkflowSteps}
+        stepOptionGroups={stepOptionGroups}
+        onResolvePreset={onResolvePreset}
         templateName={templateName}
         showTemplateNameField={false}
         headerTitle="配置工作流"
@@ -46,4 +62,15 @@ export function WorkflowBuilderModal({
       />
     </div>
   );
+}
+
+function isPresetModeKey(
+  mode: "legacy" | "preset",
+  workflowSteps?: WorkflowStepDraft[],
+  steps?: string[],
+) {
+  if (mode === "preset") {
+    return `${workflowSteps?.map((step) => step.scenePresetId).join("|") ?? "empty"}`;
+  }
+  return `${steps?.join("|") ?? "empty"}`;
 }

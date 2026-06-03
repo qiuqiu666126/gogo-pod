@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { getAdminInfo } from "./api/passportApi";
 import { useAdminStore } from "./store";
-import { clearAdminSession, setAdminUser } from "./store";
+import { clearAdminSession, reloadAdminAiData, setAdminUser } from "./store";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FeatureDetailPage } from "./pages/FeatureDetailPage";
@@ -33,6 +33,11 @@ export function AdminApp() {
       cancelled = true;
     };
   }, [authed, adminAuth?.accessToken, adminUser]);
+
+  useEffect(() => {
+    if (!authed || !adminAuth?.accessToken) return;
+    void reloadAdminAiData();
+  }, [authed, adminAuth?.accessToken]);
 
   if (!authed) return <LoginPage />;
 

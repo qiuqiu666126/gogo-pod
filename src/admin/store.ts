@@ -1,12 +1,24 @@
 import { useSyncExternalStore } from "react";
-import { getScenePresets } from "../shared/sceneFormSchema";
+import { getScenePresets, replaceScenePresetsFromApi } from "../shared/sceneFormSchema";
 import {
   ALL_FEATURE_TYPES,
-  INITIAL_FEATURE_CONFIGS,
-  INITIAL_PRESETS,
   INITIAL_TASKS,
 } from "./data/initialData";
 import type { AdminLoginData, AdminUserInfo } from "./api/passportApi";
+import {
+  getAiFunctionDetail,
+  listAiFunctions,
+  saveAiFunction,
+  type AiFunctionSavePayload,
+} from "./api/aiFunctionApi";
+import {
+  listAiScenePresets,
+} from "./api/aiScenePresetApi";
+import {
+  mapAiFunctionDetailToConfig,
+  mapAiFunctionSummaryToConfig,
+  mapAiScenePresetDetailToFormPreset,
+} from "./api/aiMappers";
 import {
   getFrontendUsers,
   reloadFrontendUsers,
@@ -20,14 +32,18 @@ reloadFrontendUsers();
 const ADMIN_AUTH_KEY = "pod_admin_auth";
 const ADMIN_USER_KEY = "pod_admin_user";
 
-let configs = structuredClone(INITIAL_FEATURE_CONFIGS);
-let presets = structuredClone(INITIAL_PRESETS);
+let configs: FeatureConfig[] = [];
+let presets: FeaturePreset[] = [];
 let tasks = structuredClone(INITIAL_TASKS);
 let adminAuth = loadAdminAuth();
 let adminUser = loadAdminUser();
 let authed = Boolean(adminAuth?.accessToken);
 let activeNav: NavId = "dashboard";
 let selectedFeature: FeatureType = "pattern-extract";
+let featuresLoading = false;
+let featuresError = "";
+let scenePresetsLoading = false;
+let scenePresetsError = "";
 
 export type AdminAuthSession = {
   accessToken: string;
@@ -45,6 +61,10 @@ type AdminSnapshot = {
   users: FrontendUserAccount[];
   adminAuth: AdminAuthSession | null;
   adminUser: AdminUserInfo | null;
+  featuresLoading: boolean;
+  featuresError: string;
+  scenePresetsLoading: boolean;
+  scenePresetsError: string;
 };
 
 const listeners = new Set<() => void>();
@@ -60,6 +80,10 @@ function buildSnapshot(): AdminSnapshot {
     users: getFrontendUsers(),
     adminAuth,
     adminUser,
+    featuresLoading,
+    featuresError,
+    scenePresetsLoading,
+    scenePresetsError,
   };
 }
 
@@ -202,6 +226,77 @@ export function getFeatureConfig(type: FeatureType): FeatureConfig | undefined {
   return configs.find((c) => c.featureType === type);
 }
 
+export async function reloadAdminAiData() {
+  const token = getAdminAccessToken();
+  if (!token) return;
+
+  featuresLoading = true;
+  scenePresetsLoading = true;
+  featuresError = "";
+  scenePresetsError = "";
+  emit();
+
+  try {
+    const [functions, presetRes] = await Promise.all([
+      listAiFunctions(token),
+      listAiScenePresets({}, token),
+    ]);
+    configs = functions.map(mapAiFunctionSummaryToConfig);
+    if (!configs.some((c) => c.featureType === selectedFeature) && configs[0]) {
+      selectedFeature = configs[0].featureType;
+    }
+    replaceScenePresetsFromApi(presetRes.list.map(mapAiScenePresetDetailToFormPreset));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "加载 AI 配置失败";
+    featuresError = message;
+    scenePresetsError = message;
+  } finally {
+    featuresLoading = false;
+    scenePresetsLoading = false;
+    emit();
+  }
+}
+
+export async function fetchFeatureConfigDetail(type: FeatureType): Promise<FeatureConfig> {
+  const token = getAdminAccessToken();
+  if (!token) {
+    throw new Error("未登录");
+  }
+  const detail = await getAiFunctionDetail(type, token);
+  const mapped = mapAiFunctionDetailToConfig(detail);
+  configs = configs.map((c) => (c.featureType === type ? mapped : c));
+  emit();
+  return mapped;
+}
+
+export async function persistFeatureConfig(
+  type: FeatureType,
+  patch: Partial<FeatureConfig>,
+): Promise<FeatureConfig> {
+  const token = getAdminAccessToken();
+  if (!token) {
+    throw new Error("未登录");
+  }
+
+  const current = getFeatureConfig(type);
+  const merged = { ...(current ?? {}), ...patch, featureType: type } as FeatureConfig;
+  const payload: AiFunctionSavePayload = {
+    name: merged.label,
+    description: merged.description,
+    modelId: merged.modelId,
+    provider: merged.provider,
+    apiBaseUrl: merged.apiBaseUrl,
+    apiKey: merged.apiKey ?? "",
+    enabled: merged.enabled,
+  };
+
+  const saved = await saveAiFunction(type, payload, token);
+  const mapped = mapAiFunctionDetailToConfig(saved);
+  configs = configs.map((c) => (c.featureType === type ? mapped : c));
+  emit();
+  return mapped;
+}
+
 export function updateFeatureConfig(type: FeatureType, patch: Partial<FeatureConfig>) {
   configs = configs.map((c) =>
     c.featureType === type ? { ...c, ...patch, updatedAt: now() } : c,
@@ -254,7 +349,7 @@ export function getDashboardStats() {
   return {
     totalFeatures: configs.length,
     enabledFeatures: configs.filter((c) => c.enabled).length,
-    withApiKey: configs.filter((c) => c.apiKey.trim()).length,
+    withApiKey: configs.filter((c) => c.hasApiKey).length,
     presetCount: getScenePresets().length,
     taskToday: tasks.length,
     designCount: designFeatures.length,

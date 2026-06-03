@@ -101,8 +101,8 @@ export function AdminShell({
         </nav>
 
         <div className="p-3 border-t border-sidebar-border text-[11px] text-muted-foreground">
-          <p>认证 API 已接入</p>
-          <p className="mt-0.5">配置数据仍为本地原型</p>
+          <p>认证与 AI 配置 API 已接入</p>
+          <p className="mt-0.5">场景预设读写走后端接口</p>
         </div>
       </aside>
 
@@ -180,7 +180,7 @@ export function FeatureListSidebar({
               {cfg.modelId}
             </div>
             <div className="flex gap-1.5 mt-1">
-              {cfg.apiKey ? (
+              {cfg.hasApiKey ? (
                 <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1 rounded">Key</span>
               ) : (
                 <span className="text-[10px] text-amber-600 bg-amber-50 px-1 rounded">无 Key</span>

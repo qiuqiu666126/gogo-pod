@@ -3,39 +3,63 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { AdminShell } from "../components/AdminShell";
 import { FormControlListEditor } from "../components/FormControlEditor";
 import { Badge, Btn, Card, Field, inputCls, textareaCls } from "../components/ui";
-import { FEATURE_LABELS, ALL_FEATURE_TYPES } from "../data/initialData";
 import type { FeatureType } from "../types";
 import { DynamicFormFields, previewFieldDomId } from "../../app/components/DynamicFormFields";
 import { CrackScenePresetPreview } from "../../app/CrackImageModal";
 import { ProductSetPresetPreview } from "../../app/ProductSetTaskModal";
 import { VideoTaskPresetPreview } from "../../app/VideoTaskModal";
 import {
+  createAiScenePreset,
+  deleteAiScenePreset,
+  getAiScenePresetDetail,
+  updateAiScenePreset,
+} from "../api/aiScenePresetApi";
+import { mapAiScenePresetDetailToFormPreset } from "../api/aiMappers";
+import {
   applyOptionChange,
   buildScenePrompt,
   collectDefaultValues,
   createPresetId,
-  deleteScenePreset,
   getScenePresets,
   listSceneFormPresets,
   subscribeScenePresets,
-  upsertScenePreset,
   type FormControl,
   type FormValue,
   type SceneFormPreset,
 } from "../../shared/sceneFormSchema";
+import { getAdminAccessToken, reloadAdminAiData, useAdminStore } from "../store";
 
 function useScenePresets() {
   return useSyncExternalStore(subscribeScenePresets, getScenePresets, getScenePresets);
 }
 
 export function PresetsPage() {
+  const { configs, scenePresetsLoading, scenePresetsError } = useAdminStore();
   const allPresets = useScenePresets();
   const [filterType, setFilterType] = useState<FeatureType>("crack");
   const [editing, setEditing] = useState<SceneFormPreset | null>(null);
   const [previewValues, setPreviewValues] = useState<Record<string, FormValue>>({});
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const [activePreviewControlId, setActivePreviewControlId] = useState<string | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const previewPaneRef = useRef<HTMLDivElement | null>(null);
+
+  const featureOptions = useMemo(
+    () => configs.map((item) => ({ code: item.featureType, label: item.label })),
+    [configs],
+  );
+
+  const featureLabel = (code: FeatureType) =>
+    configs.find((item) => item.featureType === code)?.label ?? code;
+
+  useEffect(() => {
+    if (featureOptions.length === 0) return;
+    if (!featureOptions.some((item) => item.code === filterType)) {
+      setFilterType(featureOptions[0].code);
+    }
+  }, [featureOptions, filterType]);
 
   const filtered = useMemo(
     () => listSceneFormPresets(filterType),
@@ -62,17 +86,88 @@ export function PresetsPage() {
     setActivePreviewControlId(null);
   };
 
-  const openEdit = (row: SceneFormPreset) => {
-    setEditing(structuredClone(row));
-    setPreviewValues(collectDefaultValues(row.formFields));
-    setPreviewCollapsed(false);
-    setActivePreviewControlId(null);
+  const openEdit = async (row: SceneFormPreset) => {
+    setError("");
+    setLoadingDetail(true);
+    try {
+      const token = getAdminAccessToken();
+      if (row.dbId && token) {
+        const detail = await getAiScenePresetDetail(row.dbId, token);
+        const full = mapAiScenePresetDetailToFormPreset(detail);
+        setEditing(structuredClone(full));
+        setPreviewValues(collectDefaultValues(full.formFields));
+      } else {
+        setEditing(structuredClone(row));
+        setPreviewValues(collectDefaultValues(row.formFields));
+      }
+      setPreviewCollapsed(false);
+      setActivePreviewControlId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载场景预设失败");
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
-    upsertScenePreset(editing);
-    setEditing(null);
+    const token = getAdminAccessToken();
+    if (!token) {
+      setError("未登录");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        id: editing.id,
+        featureCode: editing.featureType,
+        presetKind: editing.presetKind,
+        sceneKey: editing.sceneKey,
+        sceneLabel: editing.sceneLabel,
+        label: editing.label,
+        presetKey: editing.presetKey || editing.sceneKey,
+        promptTemplate: editing.promptTemplate,
+        formFields: editing.formFields,
+        enabled: editing.enabled,
+        sortOrder: editing.sortOrder,
+      };
+
+      if (editing.dbId) {
+        await updateAiScenePreset(editing.dbId, payload, token);
+      } else {
+        await createAiScenePreset(payload, token);
+      }
+
+      await reloadAdminAiData();
+      setEditing(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存场景预设失败");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removePreset = async (row: SceneFormPreset) => {
+    if (!confirm(`删除「${row.label}」？`)) return;
+    const token = getAdminAccessToken();
+    if (!token) {
+      setError("未登录");
+      return;
+    }
+    if (!row.dbId) {
+      setError("缺少后端 ID，无法删除");
+      return;
+    }
+
+    setError("");
+    try {
+      await deleteAiScenePreset(row.dbId, token);
+      await reloadAdminAiData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "删除场景预设失败");
+    }
   };
 
   const promptPreview = editing ? buildScenePrompt(editing, previewValues) : "";
@@ -126,16 +221,23 @@ export function PresetsPage() {
       subtitle="配置每个功能、每个场景的前台表单与提示词（AI 功能配置只管模型）"
     >
       <div className="p-6 space-y-4">
+        {(scenePresetsError || error) && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
+            {error || scenePresetsError}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex flex-wrap gap-2 items-center">
             <select
               className={`${inputCls} w-auto min-w-[140px]`}
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as FeatureType)}
+              disabled={featureOptions.length === 0}
             >
-              {ALL_FEATURE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {FEATURE_LABELS[t]}
+              {featureOptions.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -163,7 +265,7 @@ export function PresetsPage() {
             <tbody>
               {filtered.map((row) => (
                 <tr key={row.id} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-4 py-3">{FEATURE_LABELS[row.featureType as FeatureType]}</td>
+                  <td className="px-4 py-3">{featureLabel(row.featureType as FeatureType)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{row.sceneLabel || row.sceneKey || "—"}</td>
                   <td className="px-4 py-3 font-medium">{row.label}</td>
                   <td className="px-4 py-3 text-muted-foreground max-w-md truncate">
@@ -178,16 +280,14 @@ export function PresetsPage() {
                     <button
                       type="button"
                       className="text-primary text-[12px] font-medium"
-                      onClick={() => openEdit(row)}
+                      onClick={() => void openEdit(row)}
                     >
                       编辑
                     </button>
                     <button
                       type="button"
                       className="text-destructive text-[12px] font-medium"
-                      onClick={() => {
-                        if (confirm(`删除「${row.label}」？`)) deleteScenePreset(row.id);
-                      }}
+                      onClick={() => void removePreset(row)}
                     >
                       删除
                     </button>
@@ -196,11 +296,19 @@ export function PresetsPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {scenePresetsLoading ? (
+            <p className="text-center py-12 text-muted-foreground text-[13px]">加载中…</p>
+          ) : filtered.length === 0 ? (
             <p className="text-center py-12 text-muted-foreground text-[13px]">暂无预设</p>
-          )}
+          ) : null}
         </Card>
       </div>
+
+      {loadingDetail && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 text-[13px] text-foreground">
+          加载预设详情…
+        </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/40 p-4">
@@ -211,7 +319,7 @@ export function PresetsPage() {
                   {allPresets.some((p) => p.id === editing.id) ? "编辑场景预设" : "新建场景预设"}
                 </div>
                 <div className="mt-1 text-[12px] text-muted-foreground truncate">
-                  {FEATURE_LABELS[editing.featureType as FeatureType]} / {editing.sceneLabel || editing.sceneKey || "未命名场景"} / {editing.label || "未命名预设"}
+                  {featureLabel(editing.featureType as FeatureType)} / {editing.sceneLabel || editing.sceneKey || "未命名场景"} / {editing.label || "未命名预设"}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -226,7 +334,9 @@ export function PresetsPage() {
                 <Btn variant="secondary" onClick={() => setEditing(null)}>
                   取消
                 </Btn>
-                <Btn onClick={save}>保存</Btn>
+                <Btn onClick={() => void save()} disabled={saving}>
+                  {saving ? "保存中…" : "保存"}
+                </Btn>
               </div>
             </div>
 
@@ -242,9 +352,9 @@ export function PresetsPage() {
                           setEditing({ ...editing, featureType: e.target.value as FeatureType })
                         }
                       >
-                        {ALL_FEATURE_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {FEATURE_LABELS[t]}
+                        {featureOptions.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.label}
                           </option>
                         ))}
                       </select>

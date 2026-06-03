@@ -64,6 +64,8 @@ export type FormControl = {
 export type PresetKind = "scene-form" | "creative";
 
 export type SceneFormPreset = {
+  /** 后端 ai_scene_preset.id，更新/删除时使用 */
+  dbId?: number;
   id: string;
   featureType: SceneFeatureType;
   presetKind: PresetKind;
@@ -1261,6 +1263,12 @@ export function upsertScenePreset(preset: SceneFormPreset) {
 
 export function deleteScenePreset(id: string) {
   presets = presets.filter((p) => p.id !== id);
+  persist();
+}
+
+/** 管理端从 API 全量替换场景预设（同步前台读取缓存） */
+export function replaceScenePresetsFromApi(next: SceneFormPreset[]) {
+  presets = next.map(normalizePreset);
   persist();
 }
 
