@@ -48,6 +48,7 @@ export type TaskRow = {
   batch: string;
   quantity: number;
   params_json: string;
+  template_configs_json: string;
   asset_ids_json: string;
   source_urls_json: string;
   result_json: string;

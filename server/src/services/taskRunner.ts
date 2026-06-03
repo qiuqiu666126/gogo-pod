@@ -15,6 +15,14 @@ export type RunTaskResult = {
   provider?: string;
 };
 
+type ProductSetTemplatePromptConfig = {
+  templateId?: string;
+  templateName?: string;
+  category?: string;
+  images?: unknown[];
+  promptTemplate?: string;
+};
+
 function getFeatureConfig(type: FeatureType): FeatureConfigRow | undefined {
   const database = getDb();
   return database
@@ -34,6 +42,10 @@ function paramsToRecord(
   return map;
 }
 
+function normalizeKey(input: string) {
+  return input.replace(/\s+/g, "_").toLowerCase();
+}
+
 /**
  * 执行任务：读取后台配置的模型与提示词，调用供应商 API（已配置 Key 时）或返回演示结果
  */
@@ -45,11 +57,66 @@ export async function runTask(task: TaskRow): Promise<RunTaskResult> {
 
   const params = parseJson<{ label: string; value: string }[]>(task.params_json, []);
   const paramMap = paramsToRecord(params);
+  const templateConfigs = parseJson<ProductSetTemplatePromptConfig[]>(task.template_configs_json, []);
+  const primaryTemplate = templateConfigs[0];
   const defaultParams = parseJson<Record<string, unknown>>(config.default_params, {});
-  const merged = { ...defaultParams, ...paramMap } as Record<string, string>;
+  const merged = {
+    ...defaultParams,
+    ...paramMap,
+    templateConfigs: JSON.stringify(templateConfigs),
+    template_configs: JSON.stringify(templateConfigs),
+    templateConfig: primaryTemplate ? JSON.stringify(primaryTemplate) : "",
+    template_config: primaryTemplate ? JSON.stringify(primaryTemplate) : "",
+    templateName: primaryTemplate?.templateName ?? "",
+    template_name: primaryTemplate?.templateName ?? "",
+    templateCategory: primaryTemplate?.category ?? "",
+    template_category: primaryTemplate?.category ?? "",
+  } as Record<string, string>;
 
-  const userPrompt = renderPromptTemplate(config.user_prompt_template, merged);
-  const fullPrompt = [config.system_prompt, userPrompt].filter(Boolean).join("\n\n");
+  if (Array.isArray(templateConfigs) && templateConfigs.length > 0) {
+    merged["templateCount"] = String(templateConfigs.length);
+    merged["template_count"] = String(templateConfigs.length);
+    merged["templatePlacementPrintImageCount"] = String(
+      templateConfigs.reduce((count, template) => {
+        const images = Array.isArray(template.images) ? template.images : [];
+        return (
+          count +
+          images.reduce((imageCount, image) => {
+            const placements =
+              image && typeof image === "object" && Array.isArray((image as { placements?: unknown[] }).placements)
+                ? ((image as { placements: unknown[] }).placements ?? [])
+                : [];
+            return (
+              imageCount +
+              placements.filter(
+                (placement) =>
+                  placement &&
+                  typeof placement === "object" &&
+                  typeof (placement as { printImageUrl?: unknown }).printImageUrl === "string" &&
+                  ((placement as { printImageUrl?: string }).printImageUrl ?? "").trim(),
+              ).length
+            );
+          }, 0)
+        );
+      }, 0),
+    );
+    merged["template_placement_print_image_count"] = merged["templatePlacementPrintImageCount"];
+    templateConfigs.forEach((template, index) => {
+      const order = index + 1;
+      const serialized = JSON.stringify(template);
+      merged[`template${order}Config`] = serialized;
+      merged[`template${order}_config`] = serialized;
+    });
+  }
+
+  params.forEach((param) => {
+    const normalized = normalizeKey(param.label);
+    merged[normalized] = param.value;
+  });
+
+  const promptTemplate = primaryTemplate?.promptTemplate?.trim() || config.user_prompt_template || config.system_prompt;
+  const renderedPrompt = renderPromptTemplate(promptTemplate, merged);
+  const fullPrompt = renderedPrompt;
 
   const sources = parseJson<string[]>(task.source_urls_json, []);
   const quantity = Math.max(task.quantity, sources.length || 1);
@@ -58,7 +125,7 @@ export async function runTask(task: TaskRow): Promise<RunTaskResult> {
   // 已配置 API Key 时尝试调用（OpenAI 兼容 / 自定义 base URL）
   if (config.api_key?.trim()) {
     try {
-      const remote = await callProvider(config, fullPrompt, sources[0], mediaKind);
+      const remote = await callProvider(config, renderedPrompt, sources[0], mediaKind);
       if (remote) return remote;
     } catch (err) {
       console.warn("[taskRunner] 供应商调用失败，回退演示结果:", err);
@@ -95,7 +162,6 @@ async function callProvider(
   const body = {
     model: config.model_id,
     messages: [
-      { role: "system", content: config.system_prompt || "You are a helpful assistant." },
       {
         role: "user",
         content: imageUrl

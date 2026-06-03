@@ -303,7 +303,7 @@ export function ProductSetTaskModal({
               ) : (
                 <button
                   onClick={() => {
-                  onSubmit?.(
+                    onSubmit?.(
                       assetsToSubmitInput(assets, {
                         params: [
                           { label: "模板数", value: String(selected.length) },
@@ -315,6 +315,17 @@ export function ProductSetTaskModal({
                               { label: `模板${index + 1}名称`, value: template.name },
                               { label: `模板${index + 1}套图图片数`, value: String(template.images.length) },
                               {
+                                label: `模板${index + 1}区域印花图数`,
+                                value: String(
+                                  template.images.reduce(
+                                    (count, image) =>
+                                      count +
+                                      image.placements.filter((placement) => (placement.printImageUrl ?? "").trim()).length,
+                                    0,
+                                  ),
+                                ),
+                              },
+                              {
                                 label: `模板${index + 1}套图图片配置`,
                                 value: JSON.stringify(template.images),
                               },
@@ -322,6 +333,16 @@ export function ProductSetTaskModal({
                           }),
                           ...submitParams(),
                         ],
+                        templateConfigs: selected
+                          .map((id) => findProductSetTemplate(String(id)))
+                          .filter((template): template is NonNullable<typeof template> => Boolean(template))
+                          .map((template) => ({
+                            templateId: template.id,
+                            templateName: template.name,
+                            category: template.category,
+                            images: template.images,
+                            promptTemplate: template.promptTemplate,
+                          })),
                       }),
                     );
                     handleClose();

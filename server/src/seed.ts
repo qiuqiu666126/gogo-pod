@@ -80,8 +80,10 @@ const FEATURES: {
     label: "商品套图",
     modelId: "pod-mockup-set-v1",
     provider: "custom",
-    systemPrompt: "将印花贴合到商品模板，生成套图。",
-    userPromptTemplate: "模板分类：{{category}}；模板数：{{templateCount}}。",
+    systemPrompt:
+      "你是电商商品套图合成助手。你会根据商品模板图片和模板中的 placement 坐标，把印花图准确贴到指定区域。placement 中的 left、top、width、height 都是相对于模板图的百分比坐标。必须严格按 placement 区域合成，不要自由发挥位置，不要越界，不要改变商品主体结构。",
+    userPromptTemplate:
+      "任务类型：商品套图\n模板分类：{{分类}}\n模板数：{{模板数}}\n\n所选模板结构化配置如下：\n{{templateConfigs}}\n\n请逐个读取 templateConfigs 中每个模板的 images 数组，并按每张图片里的 placements 字段执行贴图：\n1. imageUrl 是底图\n2. placements 是可贴印花的区域数组\n3. left/top/width/height 为百分比坐标\n4. name/id 可作为区域语义说明\n\n要求：\n- 将上传的印花图贴合到 placements 指定区域\n- 保持透视、大小、位置合理\n- 不要贴到 placement 外\n- 每张模板图都按自己的 placement 单独处理\n- 输出最终套图结果",
     defaultParams: {},
     notes: "模板库后续扩展 mockup_templates 表",
   },

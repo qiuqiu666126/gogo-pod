@@ -1,5 +1,7 @@
+import { http } from "../../shared/http";
 import type { FeatureCategory, FeatureType } from "../types";
-import { adminHttp } from "./adminApi";
+import { assertSuccess, authHeaders, getAdminAuthHeaders, type AdminApiResponse } from "./adminApi";
+import { FEATURE_LABELS } from "../data/initialData";
 
 export type AiFunctionSummaryDto = {
   id: number;
@@ -44,45 +46,119 @@ export type AiFunctionSavePayload = {
   enabled?: boolean;
 };
 
-export async function listAiFunctions(): Promise<AiFunctionSummaryDto[]> {
-  return adminHttp.get<AiFunctionSummaryDto[]>("/admin/ai-function/list", {
-    fallbackMessage: "获取 AI 功能列表失败",
+export async function listAiFunctions(accessToken: string): Promise<AiFunctionSummaryDto[]> {
+  const res = await http.get<{ items: Array<Record<string, unknown>> }>("/api/admin/v1/feature-configs", {
+    headers: await getAdminAuthHeaders(),
   });
+  return (res.items ?? []).map((row) => ({
+    id: 0,
+    code: String(row.featureType ?? ""),
+    label: String(row.label ?? FEATURE_LABELS[String(row.featureType ?? "") as FeatureType] ?? ""),
+    name: String(row.label ?? FEATURE_LABELS[String(row.featureType ?? "") as FeatureType] ?? ""),
+    description: String(row.notes ?? ""),
+    category: (String(row.featureType) === "video" ? "video" : "design") as FeatureCategory,
+    category_code: String(String(row.featureType) === "video" ? "video" : "design"),
+    modelId: String(row.modelId ?? ""),
+    provider: String(row.provider ?? ""),
+    enabled: Boolean(row.enabled),
+    sort: 0,
+    hasApiKey: Boolean(row.hasApiKey),
+    apiKeyStatus: Boolean(row.hasApiKey) ? "configured" : "empty",
+    updatedAt: String(row.updatedAt ?? ""),
+  }));
 }
 
-export async function getAiFunctionMeta(): Promise<AiFunctionMetaDto> {
-  return adminHttp.get<AiFunctionMetaDto>("/admin/ai-function/meta", {
-    fallbackMessage: "获取 AI 功能元数据失败",
-  });
+export async function getAiFunctionMeta(accessToken: string): Promise<AiFunctionMetaDto> {
+  return {
+    providers: [
+      { value: "openai-compatible", label: "OpenAI Compatible" },
+      { value: "replicate", label: "Replicate" },
+      { value: "custom", label: "Custom" },
+    ],
+    categories: [
+      { value: "design", label: "作图" },
+      { value: "video", label: "视频" },
+    ],
+    features: Object.entries(FEATURE_LABELS).map(([code, label]) => ({
+      value: code,
+      label,
+      code,
+    })),
+  };
 }
 
 export async function getAiFunctionDetail(
   code: FeatureType,
+  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  return adminHttp.get<AiFunctionDetailDto>(
-    `/admin/ai-function/${encodeURIComponent(code)}`,
-    { fallbackMessage: "获取 AI 功能详情失败" },
+  const res = await http.get<Record<string, unknown>>(
+    `/api/admin/v1/feature-configs/${encodeURIComponent(code)}`,
+    { headers: await getAdminAuthHeaders() },
   );
+  return {
+    id: 0,
+    code,
+    label: String(res.label ?? FEATURE_LABELS[code]),
+    name: String(res.label ?? FEATURE_LABELS[code]),
+    description: String(res.notes ?? ""),
+    category: (code === "video" ? "video" : "design") as FeatureCategory,
+    category_code: code === "video" ? "video" : "design",
+    modelId: String(res.modelId ?? ""),
+    provider: String(res.provider ?? ""),
+    enabled: Boolean(res.enabled),
+    sort: 0,
+    hasApiKey: Boolean(res.hasApiKey),
+    apiKeyStatus: Boolean(res.hasApiKey) ? "configured" : "empty",
+    updatedAt: String(res.updatedAt ?? ""),
+    apiBaseUrl: String(res.apiBaseUrl ?? ""),
+    apiKey: String(res.apiKey ?? ""),
+    createdAt: String(res.updatedAt ?? ""),
+  };
 }
 
 export async function saveAiFunction(
   code: FeatureType,
   payload: AiFunctionSavePayload,
+  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  return adminHttp.put<AiFunctionDetailDto>(
-    `/admin/ai-function/${encodeURIComponent(code)}`,
-    payload,
-    { fallbackMessage: "保存 AI 功能配置失败" },
+  const res = await http.put<Record<string, unknown>>(
+    `/api/admin/v1/feature-configs/${encodeURIComponent(code)}`,
+    {
+      label: payload.label ?? payload.name,
+      description: payload.description,
+      modelId: payload.modelId ?? payload.model_id,
+      provider: payload.provider,
+      apiBaseUrl: payload.apiBaseUrl ?? payload.api_base_url,
+      apiKey: payload.apiKey ?? payload.api_key,
+      enabled: payload.enabled,
+    },
+    { headers: await getAdminAuthHeaders() },
   );
+  return {
+    id: 0,
+    code,
+    label: String(res.label ?? FEATURE_LABELS[code]),
+    name: String(res.label ?? FEATURE_LABELS[code]),
+    description: String(res.notes ?? ""),
+    category: (code === "video" ? "video" : "design") as FeatureCategory,
+    category_code: code === "video" ? "video" : "design",
+    modelId: String(res.modelId ?? ""),
+    provider: String(res.provider ?? ""),
+    enabled: Boolean(res.enabled),
+    sort: 0,
+    hasApiKey: Boolean(res.hasApiKey),
+    apiKeyStatus: Boolean(res.hasApiKey) ? "configured" : "empty",
+    updatedAt: String(res.updatedAt ?? ""),
+    apiBaseUrl: String(res.apiBaseUrl ?? ""),
+    apiKey: String(res.apiKey ?? ""),
+    createdAt: String(res.updatedAt ?? ""),
+  };
 }
 
 export async function updateAiFunctionStatus(
   code: FeatureType,
   enabled: boolean,
+  accessToken: string,
 ): Promise<AiFunctionDetailDto> {
-  return adminHttp.patch<AiFunctionDetailDto>(
-    `/admin/ai-function/${encodeURIComponent(code)}/status`,
-    { enabled },
-    { fallbackMessage: "更新 AI 功能状态失败" },
-  );
+  return saveAiFunction(code, { enabled }, accessToken);
 }

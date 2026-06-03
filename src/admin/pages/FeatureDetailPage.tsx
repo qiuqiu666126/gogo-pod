@@ -103,7 +103,7 @@ export function FeatureDetailPage() {
     <AdminShell
       featureSidebar={<FeatureListSidebarConnected />}
       title={draft.label}
-      subtitle="模型与基础信息 · 表单与提示词请在「场景预设」配置"
+      subtitle="模型与密钥配置；场景预设负责前台表单与场景参数"
     >
       <div className="p-6 max-w-[720px] space-y-5">
         {(featuresError || error) && (
@@ -174,7 +174,7 @@ export function FeatureDetailPage() {
               </div>
             </Card>
             <p className="text-[12px] text-muted-foreground rounded-lg border border-border bg-muted/30 px-4 py-3">
-              前台表单控件、各场景参数、提示词片段请在左侧菜单「场景预设 → 场景表单」中配置。
+              前台表单控件和场景参数请在左侧菜单「场景预设」配置。商品套图的套图提示词请在「套图模版」内按模板单独配置。
             </p>
           </div>
         )}

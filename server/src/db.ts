@@ -64,6 +64,7 @@ function migrate(database: Database.Database) {
       batch TEXT NOT NULL,
       quantity INTEGER NOT NULL DEFAULT 1,
       params_json TEXT NOT NULL DEFAULT '[]',
+      template_configs_json TEXT NOT NULL DEFAULT '[]',
       asset_ids_json TEXT NOT NULL DEFAULT '[]',
       source_urls_json TEXT NOT NULL DEFAULT '[]',
       result_json TEXT NOT NULL DEFAULT '[]',

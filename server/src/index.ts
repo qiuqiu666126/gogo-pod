@@ -30,6 +30,107 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "pod-api" });
 });
 
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "pod-admin-dev";
+const ADMIN_USER = {
+  id: 1,
+  username: "admin",
+  user_type: "super_admin",
+  nickname: "管理员",
+  phone: "",
+  email: "admin@gogopod.local",
+  avatar: "",
+  signed: "GOGO POD Admin",
+  status: 1,
+  login_ip: "127.0.0.1",
+  login_time: "",
+  created_by: 0,
+  updated_by: 0,
+  created_at: "2026-01-01 00:00:00",
+  updated_at: "2026-01-01 00:00:00",
+  remark: "Local dev admin",
+  policy: {
+    policy_type: "admin",
+    is_default: true,
+    value: {},
+  },
+};
+
+app.post("/admin/passport/login", (req, res) => {
+  const { username, password } = req.body ?? {};
+  if (String(username ?? "").trim() !== "admin" || String(password ?? "") !== "123456") {
+    res.status(200).json({
+      code: 401,
+      message: "账号或密码错误",
+      data: null,
+    });
+    return;
+  }
+
+  res.json({
+    code: 200,
+    message: "ok",
+    data: {
+      access_token: ADMIN_TOKEN,
+      refresh_token: ADMIN_TOKEN,
+      expire_at: 24 * 60 * 60,
+    },
+  });
+});
+
+app.post("/admin/passport/refresh", (req, res) => {
+  const header = req.headers.authorization;
+  const provided = header?.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!provided || provided !== ADMIN_TOKEN) {
+    res.status(200).json({
+      code: 401,
+      message: "登录已过期",
+      data: null,
+    });
+    return;
+  }
+
+  res.json({
+    code: 200,
+    message: "ok",
+    data: {
+      access_token: ADMIN_TOKEN,
+      refresh_token: ADMIN_TOKEN,
+      expire_at: 24 * 60 * 60,
+    },
+  });
+});
+
+app.get("/admin/passport/getInfo", (req, res) => {
+  const header = req.headers.authorization;
+  const provided = header?.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!provided || provided !== ADMIN_TOKEN) {
+    res.status(200).json({
+      code: 401,
+      message: "未登录",
+      data: null,
+    });
+    return;
+  }
+
+  res.json({
+    code: 200,
+    message: "ok",
+    data: {
+      ...ADMIN_USER,
+      login_time: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  });
+});
+
+app.post("/admin/passport/logout", (_req, res) => {
+  res.json({
+    code: 200,
+    message: "ok",
+    data: true,
+  });
+});
+
 app.use("/api/v1/config", configRouter);
 app.use("/api/v1/tasks", tasksRouter);
 app.use("/api/v1/upload", uploadRouter);

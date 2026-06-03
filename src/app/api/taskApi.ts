@@ -1,6 +1,15 @@
 import { getApiBase, http } from "./apiClient";
 import type { FeatureTaskParam, FeatureTaskType } from "../featureTasks";
 import { FEATURE_AI_MODEL } from "../featureTaskApi";
+import type { ProductSetMockupImage } from "../../shared/productSetTemplates";
+
+export type ProductSetTemplateConfig = {
+  templateId: string;
+  templateName: string;
+  category: string;
+  images: ProductSetMockupImage[];
+  promptTemplate?: string;
+};
 
 export type CreateRemoteTaskBody = {
   type: FeatureTaskType;
@@ -8,6 +17,7 @@ export type CreateRemoteTaskBody = {
   assetIds?: string[];
   sourceUrls?: string[];
   params?: FeatureTaskParam[];
+  templateConfigs?: ProductSetTemplateConfig[];
   quantity?: number;
   remark?: string;
 };

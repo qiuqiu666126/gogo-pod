@@ -24,6 +24,7 @@ export type ProductSetPlacement = {
   width: number;
   height: number;
   angle?: number;
+  printImageUrl?: string;
 };
 
 export type ProductSetMockupImage = {
@@ -38,10 +39,14 @@ export type OfficialProductSetTemplate = {
   name: string;
   category: ProductSetCategory;
   images: ProductSetMockupImage[];
+  promptTemplate?: string;
   enabled: boolean;
   sortOrder: number;
   updatedAt: string;
 };
+
+export const DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE =
+  "你是电商商品套图合成助手。你会根据商品模板图片和模板中的 placement 坐标，把印花图准确贴到指定区域。placement 中的 left、top、width、height 都是相对于模板图的百分比坐标。必须严格按 placement 区域合成，不要自由发挥位置，不要越界，不要改变商品主体结构。\n\n当前模板结构化配置如下：\n{{templateConfig}}\n\n请读取 templateConfig 中的 images 数组，并按每张图片里的 placements 字段执行贴图：\n1. imageUrl 是底图\n2. placements 是可贴印花的区域数组\n3. left/top/width/height 为百分比坐标\n4. name/id 可作为区域语义说明\n5. 如果某个 placement 中存在 printImageUrl，表示该区域已配置默认印花图，请优先参考该图与该区域坐标执行合成\n\n要求：\n- 将印花图贴合到 placements 指定区域\n- 保持透视、大小、位置合理\n- 不要贴到 placement 外\n- 每张模板图都按自己的 placement 单独处理\n- 输出最终套图结果";
 
 const STORAGE_KEY = "pod_official_product_set_templates";
 const LEGACY_STORAGE_KEY = "lingtu_official_product_set_templates";
@@ -74,6 +79,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "print-detail", name: "局部印花区域", left: 26, top: 24, width: 46, height: 36 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -87,6 +93,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "puzzle-scene-front", name: "场景拼图区域", left: 34, top: 22, width: 34, height: 40 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -100,6 +107,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "vase-scene-front", name: "场景主体区域", left: 36, top: 18, width: 30, height: 44 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -110,6 +118,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "card-front", name: "贺卡正面区域", left: 23, top: 21, width: 52, height: 58 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -123,6 +132,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "case-angle-back", name: "斜角贴图区域", left: 34, top: 18, width: 34, height: 60 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -133,6 +143,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "tin-main", name: "铁皮画主体区域", left: 20, top: 20, width: 60, height: 55 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
   {
@@ -143,6 +154,7 @@ const SEED: Omit<OfficialProductSetTemplate, "id" | "sortOrder" | "updatedAt">[]
         { id: "clock-face", name: "表盘区域", left: 23, top: 18, width: 54, height: 54 },
       ]),
     ],
+    promptTemplate: DEFAULT_PRODUCT_SET_PROMPT_TEMPLATE,
     enabled: true,
   },
 ];
@@ -182,6 +194,7 @@ function normalizePlacement(
     width: Number(placement?.width ?? 40),
     height: Number(placement?.height ?? 40),
     angle: Number(placement?.angle ?? 0),
+    printImageUrl: typeof placement?.printImageUrl === "string" ? placement.printImageUrl : "",
   };
 }
 
@@ -244,6 +257,12 @@ function normalizeTemplate(
     name: template.name || "未命名模板",
     category: (template.category || "推荐") as ProductSetCategory,
     images: normalizeLegacyImages(template).filter((image) => image.imageUrl),
+    promptTemplate:
+      typeof template.promptTemplate === "string"
+        ? template.promptTemplate
+        : typeof template.userPromptTemplate === "string"
+          ? template.userPromptTemplate
+          : SEED[0].promptTemplate,
     enabled: template.enabled ?? true,
     sortOrder: template.sortOrder ?? fallbackSortOrder,
     updatedAt: template.updatedAt || now(),
@@ -325,6 +344,7 @@ export function upsertOfficialProductSetTemplate(
     images: input.images
       .filter((image) => image.imageUrl.trim())
       .map((image, index) => normalizeImage(image, index)),
+    promptTemplate: input.promptTemplate?.trim() || SEED[0].promptTemplate,
     updatedAt: input.updatedAt ?? now(),
   };
   if (idx >= 0) {

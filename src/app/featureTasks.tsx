@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { UploadedAsset } from "./api/uploadApi";
-import { createRemoteTask } from "./api/taskApi";
+import { createRemoteTask, type ProductSetTemplateConfig } from "./api/taskApi";
 import { executeFeatureTask, type ExecuteTaskPayload } from "./featureTaskApi";
 import { getCurrentOperator } from "./appConstants";
 import { syncTaskCenterFromFeatureTasks } from "./taskCenterStore";
@@ -52,6 +52,7 @@ export type FeatureTask = {
 export type SubmitFeatureTaskInput = {
   quantity?: number;
   params?: FeatureTaskParam[];
+  templateConfigs?: ProductSetTemplateConfig[];
   preview?: string;
   sourceUrl?: string;
   sourceUrls?: string[];
@@ -193,6 +194,7 @@ export function submitFeatureTask(type: FeatureTaskType, input?: SubmitFeatureTa
     success: 0,
     status: "运行中",
     params: input?.params,
+    templateConfigs: input?.templateConfigs,
     preview,
     items: [],
     assetIds: input?.assetIds,
@@ -225,6 +227,7 @@ export function submitFeatureTask(type: FeatureTaskType, input?: SubmitFeatureTa
     assetIds: input?.assetIds,
     sourceUrls,
     params: input?.params,
+    templateConfigs: input?.templateConfigs,
     quantity,
   })
     .then((remote) => {

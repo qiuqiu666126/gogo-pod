@@ -18,6 +18,7 @@ tasksRouter.post("/", (req, res) => {
     assetIds?: string[];
     sourceUrls?: string[];
     params?: { label: string; value: string }[];
+    templateConfigs?: unknown[];
     quantity?: number;
     remark?: string;
     operator?: string;
@@ -50,6 +51,7 @@ tasksRouter.post("/", (req, res) => {
     batch: formatBatch(now),
     quantity: body.quantity ?? 1,
     params_json: JSON.stringify(body.params ?? []),
+    template_configs_json: JSON.stringify(body.templateConfigs ?? []),
     asset_ids_json: JSON.stringify(body.assetIds ?? []),
     source_urls_json: JSON.stringify(body.sourceUrls ?? []),
     result_json: "[]",
@@ -64,11 +66,11 @@ tasksRouter.post("/", (req, res) => {
     .prepare(
       `INSERT INTO tasks (
         id, feature_type, model_id, status, batch, quantity,
-        params_json, asset_ids_json, source_urls_json, result_json,
+        params_json, template_configs_json, asset_ids_json, source_urls_json, result_json,
         error_message, remark, operator, created_at, updated_at
       ) VALUES (
         @id, @feature_type, @model_id, @status, @batch, @quantity,
-        @params_json, @asset_ids_json, @source_urls_json, @result_json,
+        @params_json, @template_configs_json, @asset_ids_json, @source_urls_json, @result_json,
         @error_message, @remark, @operator, @created_at, @updated_at
       )`,
     )
@@ -161,6 +163,7 @@ function formatTaskResponse(row: TaskRow) {
     batch: row.batch,
     quantity: row.quantity,
     params: parseJson(row.params_json, []),
+    templateConfigs: parseJson(row.template_configs_json, []),
     assetIds: parseJson(row.asset_ids_json, []),
     sourceUrls: parseJson(row.source_urls_json, []),
     results: parseJson(row.result_json, []),

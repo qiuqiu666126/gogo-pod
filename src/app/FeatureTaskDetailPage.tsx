@@ -422,26 +422,6 @@ export function FeatureTaskDetailPage({
         <span className="text-muted-foreground">
           操作人：<span className="text-foreground">{task.operator}</span>
         </span>
-        <div className="flex items-center gap-2 ml-auto">
-          <button
-            type="button"
-            className="h-7 px-3 rounded-md border border-border text-[12px] hover:bg-muted/40"
-          >
-            备注
-          </button>
-          <button
-            type="button"
-            className="h-7 px-3 rounded-md border border-border text-[12px] hover:bg-muted/40"
-          >
-            任务参数
-          </button>
-          <button
-            type="button"
-            className="h-7 px-3 rounded-md border border-primary text-primary text-[12px] hover:bg-primary/5"
-          >
-            重新编辑
-          </button>
-        </div>
       </div>
 
       <div className="px-6 py-2 text-[13px] text-muted-foreground shrink-0">
