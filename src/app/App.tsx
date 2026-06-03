@@ -538,7 +538,7 @@ export default function App() {
           </div>
           <button
             type="button"
-            onClick={() => frontendLogout()}
+            onClick={() => void frontendLogout()}
             className="w-full text-[11px] text-muted-foreground hover:text-foreground py-1.5 rounded-md hover:bg-sidebar-accent"
           >
             退出登录
@@ -647,7 +647,7 @@ export default function App() {
           {/* Welcome */}
           <div>
             <h1 className="text-[22px] font-semibold text-foreground">
-              欢迎回来，<span className="text-primary">小明</span> 👋
+              欢迎回来，<span className="text-primary">{session?.displayName ?? "用户"}</span> 👋
             </h1>
             <p className="text-[13px] text-muted-foreground mt-1">
               今天是 2025年5月25日，距母亲节还有{" "}

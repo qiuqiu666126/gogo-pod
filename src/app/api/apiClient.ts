@@ -1,4 +1,14 @@
-import { http } from "../../shared/http";
+import { createHttpClient, http } from "../../shared/http";
+
+export const appHttp = createHttpClient({
+  headers: async () => {
+    const { ensureFrontendAccessToken } = await import("../auth/useFrontendSession");
+    const token = await ensureFrontendAccessToken();
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  },
+});
 
 export {
   ApiError,

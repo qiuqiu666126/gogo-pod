@@ -1,4 +1,4 @@
-import { http } from "./apiClient";
+import { appHttp } from "./apiClient";
 import type { UploadedAsset } from "./uploadApi";
 
 export type ReversePromptResult = {
@@ -20,7 +20,7 @@ const MOCK_PROMPTS = [
  */
 export async function reversePromptFromImage(asset: UploadedAsset): Promise<string> {
   try {
-    const res = await http.post<{ prompt: string }>("/api/v1/text2img/reverse-prompt", {
+    const res = await appHttp.post<{ prompt: string }>("/api/v1/text2img/reverse-prompt", {
       assetId: asset.id,
       imageUrl: asset.url,
     });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { validateFrontendLogin } from "../shared/frontendUsers";
+import { frontendLogin } from "./auth/useFrontendSession";
 
 export function FrontendLoginPage() {
   const [username, setUsername] = useState("");
@@ -7,15 +7,19 @@ export function FrontendLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const session = validateFrontendLogin(username, password);
-    setLoading(false);
-    if (!session) {
-      setError("账号或密码错误，或账号已停用");
-      return;
+    try {
+      await frontendLogin({
+        username: username.trim(),
+        password,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "账号或密码错误，或账号已停用");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,8 +75,6 @@ export function FrontendLoginPage() {
         </form>
 
         <p className="text-[11px] text-center text-muted-foreground mt-6 leading-relaxed">
-          演示账号：xiaoming / 123456 · operator_b / 123456
-          <br />
           账号由管理后台「用户账号管理」创建
           {import.meta.env.DEV && (
             <>

@@ -1,4 +1,4 @@
-import { http, isApiEnabled } from "./apiClient";
+import { appHttp, isApiEnabled } from "./apiClient";
 import type { FeatureTaskType } from "../featureTasks";
 
 export type PublicFeatureConfig = {
@@ -26,7 +26,7 @@ let configCache: Map<FeatureTaskType, PublicFeatureConfig> | null = null;
 export async function loadFeatureConfigs(): Promise<Map<FeatureTaskType, PublicFeatureConfig>> {
   if (!isApiEnabled()) return new Map();
   try {
-    const res = await http.get<{ items: PublicFeatureConfig[] }>("/api/v1/config/features");
+    const res = await appHttp.get<{ items: PublicFeatureConfig[] }>("/api/v1/config/features");
     const map = new Map<FeatureTaskType, PublicFeatureConfig>();
     for (const item of res.items) {
       if (item.enabled) map.set(item.featureType, item);
@@ -46,7 +46,7 @@ export async function getRuntimeModelId(type: FeatureTaskType, fallback: string)
 export async function getFeaturePresets(type: FeatureTaskType, scene?: string) {
   if (!isApiEnabled()) return [];
   try {
-    const res = await http.get<{ items: FeaturePreset[] }>(
+    const res = await appHttp.get<{ items: FeaturePreset[] }>(
       `/api/v1/config/features/${type}/presets`,
       { query: scene ? { scene } : undefined },
     );

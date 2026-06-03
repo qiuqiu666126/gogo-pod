@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import App from "./App";
 import { FrontendLoginPage } from "./FrontendLoginPage";
-import { useFrontendSession } from "./auth/useFrontendSession";
-import { ensureDevPreviewSession, shouldSkipFrontendLogin } from "../shared/frontendUsers";
+import {
+  ensureDevPreviewSession,
+  shouldSkipFrontendLogin,
+  useFrontendSession,
+} from "./auth/useFrontendSession";
 
 export default function AppRoot() {
   const session = useFrontendSession();

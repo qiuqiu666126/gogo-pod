@@ -1,4 +1,4 @@
-import { getFrontendSession } from "../shared/frontendUsers";
+import { getFrontendSession } from "./auth/useFrontendSession";
 
 /** 未登录时的回退操作人 */
 export const DEFAULT_OPERATOR = "小明";
