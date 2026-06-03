@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, UserPlus } from "lucide-react";
+import { Plus, Search, UserPlus } from "lucide-react";
 import {
+  createFrontUser,
   getAdminUserList,
   getAdminUserStats,
+  type CreateFrontUserBody,
   type AdminUserStatsResponse,
   type FrontUserInfo,
 } from "../api/userApi";
 import { AdminShell } from "../components/AdminShell";
-import { Badge, Btn, Card, inputCls } from "../components/ui";
+import { Badge, Btn, Card, Field, inputCls } from "../components/ui";
 import { getAdminAccessToken } from "../store";
 
 const PAGE_SIZE = 10;
@@ -16,6 +18,32 @@ const STATUS_MAP: Record<number, { label: string; tone: "success" | "default" | 
   1: { label: "正常", tone: "success" },
   2: { label: "已停用", tone: "danger" },
 };
+
+const ROLE_OPTIONS = [
+  { code: "FrontMember", label: "成员" },
+  { code: "FrontAdmin", label: "管理员" },
+  { code: "FrontViewer", label: "只读" },
+];
+
+const PLAN_OPTIONS = [
+  { value: "professional", label: "专业版" },
+  { value: "basic", label: "基础版" },
+  { value: "trial", label: "试用版" },
+];
+
+function emptyCreateForm(): CreateFrontUserBody {
+  return {
+    username: "",
+    nickname: "",
+    password: "",
+    email: "",
+    phone: "",
+    role_code: "FrontMember",
+    plan: "professional",
+    status: 1,
+    remark: "",
+  };
+}
 
 function formatStatus(status: number) {
   return STATUS_MAP[status] ?? { label: `状态 ${status}`, tone: "default" as const };
@@ -58,6 +86,11 @@ export function UsersPage() {
   const [stats, setStats] = useState<AdminUserStatsResponse>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateFrontUserBody>(emptyCreateForm);
+  const [createError, setCreateError] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -71,6 +104,8 @@ export function UsersPage() {
     [stats, users],
   );
   const statsTotal = statValue(stats, ["total"]) || total;
+
+  const reloadList = () => setReloadKey((key) => key + 1);
 
   useEffect(() => {
     const token = getAdminAccessToken();
@@ -111,7 +146,56 @@ export function UsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [keyword, page, status]);
+  }, [keyword, page, reloadKey, status]);
+
+  const openCreateModal = () => {
+    setCreateForm(emptyCreateForm());
+    setCreateError("");
+    setModalOpen(true);
+  };
+
+  const submitCreate = async () => {
+    const token = getAdminAccessToken();
+    if (!token) {
+      setCreateError("登录状态已失效，请重新登录");
+      return;
+    }
+    if (!createForm.username.trim()) {
+      setCreateError("请填写登录账号");
+      return;
+    }
+    if (!createForm.nickname.trim()) {
+      setCreateError("请填写昵称");
+      return;
+    }
+    if (!createForm.password || createForm.password.length < 6) {
+      setCreateError("密码至少 6 位");
+      return;
+    }
+
+    setCreating(true);
+    setCreateError("");
+    try {
+      await createFrontUser(
+        {
+          ...createForm,
+          username: createForm.username.trim(),
+          nickname: createForm.nickname.trim(),
+          email: createForm.email.trim(),
+          phone: createForm.phone.trim(),
+          remark: createForm.remark.trim(),
+        },
+        token,
+      );
+      setModalOpen(false);
+      setPage(1);
+      reloadList();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "创建用户失败");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <AdminShell
@@ -149,7 +233,7 @@ export function UsersPage() {
               <option value="2">已停用</option>
             </select>
           </div>
-          <Btn disabled title="待接入创建用户接口">
+          <Btn onClick={openCreateModal}>
             <span className="flex items-center gap-1.5">
               <UserPlus size={16} />
               开设账号
@@ -277,6 +361,127 @@ export function UsersPage() {
           </div>
         </div>
       </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-border font-semibold flex items-center gap-2">
+              <Plus size={18} className="text-primary" />
+              开设前台用户
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="登录账号">
+                  <input
+                    className={inputCls}
+                    value={createForm.username}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, username: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="昵称">
+                  <input
+                    className={inputCls}
+                    value={createForm.nickname}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, nickname: e.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+              <Field label="登录密码">
+                <input
+                  type="password"
+                  className={inputCls}
+                  value={createForm.password}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, password: e.target.value })
+                  }
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="邮箱">
+                  <input
+                    className={inputCls}
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  />
+                </Field>
+                <Field label="手机">
+                  <input
+                    className={inputCls}
+                    value={createForm.phone}
+                    onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="角色">
+                  <select
+                    className={inputCls}
+                    value={createForm.role_code}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, role_code: e.target.value })
+                    }
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role.code} value={role.code}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="套餐">
+                  <select
+                    className={inputCls}
+                    value={createForm.plan}
+                    onChange={(e) => setCreateForm({ ...createForm, plan: e.target.value })}
+                  >
+                    {PLAN_OPTIONS.map((plan) => (
+                      <option key={plan.value} value={plan.value}>
+                        {plan.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="状态">
+                  <select
+                    className={inputCls}
+                    value={createForm.status}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, status: Number(e.target.value) })
+                    }
+                  >
+                    <option value={1}>正常</option>
+                    <option value={2}>停用</option>
+                  </select>
+                </Field>
+              </div>
+              <Field label="备注">
+                <input
+                  className={inputCls}
+                  value={createForm.remark}
+                  onChange={(e) => setCreateForm({ ...createForm, remark: e.target.value })}
+                />
+              </Field>
+              {createError && <p className="text-[13px] text-destructive">{createError}</p>}
+            </div>
+            <div className="px-5 py-4 border-t border-border flex justify-end gap-2">
+              <Btn
+                variant="secondary"
+                disabled={creating}
+                onClick={() => setModalOpen(false)}
+              >
+                取消
+              </Btn>
+              <Btn disabled={creating} onClick={() => void submitCreate()}>
+                {creating ? "创建中..." : "保存"}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }

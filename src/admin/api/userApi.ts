@@ -45,6 +45,18 @@ export type AdminUserStatsResponse = Partial<{
   stopped: number;
 }>;
 
+export type CreateFrontUserBody = {
+  username: string;
+  nickname: string;
+  password: string;
+  email: string;
+  phone: string;
+  role_code: string;
+  plan: string;
+  status: number;
+  remark: string;
+};
+
 type MaybeWrappedResponse<T> =
   | T
   | {
@@ -107,4 +119,17 @@ export async function getAdminUserStats(
   );
 
   return unwrapResponse(res, "获取用户账号统计失败");
+}
+
+export async function createFrontUser(
+  body: CreateFrontUserBody,
+  accessToken: string,
+): Promise<unknown> {
+  const res = await http.post<MaybeWrappedResponse<unknown>>(
+    "/admin/front-user",
+    body,
+    { headers: authHeaders(accessToken) },
+  );
+
+  return unwrapResponse(res, "创建用户失败");
 }
