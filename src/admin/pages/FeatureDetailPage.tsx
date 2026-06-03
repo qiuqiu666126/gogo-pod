@@ -75,7 +75,15 @@ export function FeatureDetailPage() {
     );
   }
 
-  if (!draft) return null;
+  if (!draft) {
+    return (
+      <AdminShell featureSidebar={<FeatureListSidebarConnected />} title="AI 功能配置">
+        <div className="p-6 text-[13px] text-destructive">
+          {error || featuresError || "加载功能配置失败，请刷新页面重试"}
+        </div>
+      </AdminShell>
+    );
+  }
 
   const providerSelectOptions = [...providerOptions];
   if (draft.provider && !providerSelectOptions.some((item) => item.value === draft.provider)) {

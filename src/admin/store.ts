@@ -18,7 +18,7 @@ import {
 import {
   mapAiFunctionDetailToConfig,
   mapAiFunctionSummaryToConfig,
-  mapAiScenePresetDetailToFormPreset,
+  mapAiScenePresetSummaryToFormPreset,
 } from "./api/aiMappers";
 import {
   getFrontendUsers,
@@ -321,25 +321,33 @@ export async function reloadAdminAiData() {
   scenePresetsError = "";
   emit();
 
-  try {
-    const [functions, presetRes] = await Promise.all([
-      listAiFunctions(),
-      listAiScenePresets({}),
-    ]);
-    configs = functions.map(mapAiFunctionSummaryToConfig);
-    if (!configs.some((c) => c.featureType === selectedFeature) && configs[0]) {
-      selectedFeature = configs[0].featureType;
-    }
-    replaceScenePresetsFromApi(presetRes.list.map(mapAiScenePresetDetailToFormPreset));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "加载 AI 配置失败";
-    featuresError = message;
-    scenePresetsError = message;
-  } finally {
-    featuresLoading = false;
-    scenePresetsLoading = false;
-    emit();
-  }
+  await Promise.all([
+    listAiFunctions()
+      .then((functions) => {
+        configs = functions.map(mapAiFunctionSummaryToConfig);
+        if (!configs.some((c) => c.featureType === selectedFeature) && configs[0]) {
+          selectedFeature = configs[0].featureType;
+        }
+      })
+      .catch((err) => {
+        featuresError = err instanceof Error ? err.message : "加载 AI 功能列表失败";
+      })
+      .finally(() => {
+        featuresLoading = false;
+        emit();
+      }),
+    listAiScenePresets({})
+      .then((presetRes) => {
+        replaceScenePresetsFromApi(presetRes.list.map(mapAiScenePresetSummaryToFormPreset));
+      })
+      .catch((err) => {
+        scenePresetsError = err instanceof Error ? err.message : "加载场景预设失败";
+      })
+      .finally(() => {
+        scenePresetsLoading = false;
+        emit();
+      }),
+  ]);
 }
 
 export async function fetchFeatureConfigDetail(type: FeatureType): Promise<FeatureConfig> {

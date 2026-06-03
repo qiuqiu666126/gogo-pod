@@ -127,7 +127,7 @@ export function PresetsPage() {
     try {
       const token = getAdminAccessToken();
       if (row.dbId && token) {
-        const detail = await getAiScenePresetDetail(row.dbId, token);
+        const detail = await getAiScenePresetDetail(row.dbId);
         const full = mapAiScenePresetDetailToFormPreset(detail);
         setEditing(structuredClone(full));
         setPreviewValues(collectDefaultValues(full.formFields));
