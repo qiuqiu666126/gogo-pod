@@ -1,15 +1,10 @@
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
-  Ban,
-  Check,
-  ChevronRight,
-  Download,
-  Eye,
-  Pencil,
   RefreshCw,
 } from "lucide-react";
 import {
+  showDownloadStartedSuccess,
   showSaveToProductLibrarySuccess,
   showTaskActionSuccess,
   showTaskError,
@@ -31,12 +26,14 @@ import {
   submitFeatureTask,
 } from "./featureTasks";
 import { InfringementFilterTaskModal } from "./InfringementFilterTaskModal";
+import { addDownloadRecord } from "./downloadCenterStore";
 import { addProductsFromTaskResults } from "./productLibrary";
 import { PatternExtractModal } from "./PatternExtractModal";
 import { ProductSetTaskModal } from "./ProductSetTaskModal";
 import { RecreateModal } from "./RecreateModal";
 import { SmartEditModal } from "./SmartEditModal";
 import { TaskDetailBatchBar } from "./TaskDetailBatchBar";
+import { TaskResultComparisonPanel } from "./TaskResultComparisonPanel";
 import { VectorTaskModal } from "./VectorTaskModal";
 import { VideoTaskModal } from "./VideoTaskModal";
 
@@ -51,179 +48,6 @@ function StatusBadge({ status }: { status: FeatureTask["status"] }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${cls}`}>
       {status}
     </span>
-  );
-}
-
-function ResultPairCard({
-  item,
-  taskType,
-  taskId,
-  selected,
-  onToggleSelect,
-  onDiscard,
-  onRecreate,
-  onSmartEdit,
-}: {
-  item: FeatureTaskResultItem;
-  taskType: FeatureTaskType;
-  taskId: string;
-  selected: boolean;
-  onToggleSelect: () => void;
-  onDiscard: () => void;
-  onRecreate: () => void;
-  onSmartEdit: () => void;
-}) {
-  const isVideo = item.mediaKind === "video";
-  const discarded = item.discarded;
-
-  if (discarded) {
-    return (
-      <div
-        className={`rounded-xl border px-8 py-16 text-center text-[13px] text-muted-foreground transition-colors ${
-          selected ? "border-primary ring-1 ring-primary/30 bg-primary/5" : "border-dashed border-border bg-muted/20"
-        }`}
-      >
-        <label className="inline-flex items-center gap-2 cursor-pointer mb-3">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelect}
-            className="w-4 h-4 accent-[#ff6b2c] rounded"
-          />
-          <span className="text-[12px]">选择此项</span>
-        </label>
-        <div>
-          该结果已废弃
-          <button
-            type="button"
-            onClick={() => discardFeatureTaskItem(taskType, taskId, item.id, false)}
-            className="ml-2 text-primary hover:underline"
-          >
-            恢复
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-stretch gap-4">
-      <div className="flex-1 min-w-0">
-        <div className="relative aspect-[4/5] max-h-[420px] rounded-xl border border-border overflow-hidden bg-muted">
-          <img src={item.sourceUrl} alt="原图" className="w-full h-full object-contain" />
-          <span className="absolute bottom-3 left-3 px-2 py-0.5 rounded text-[11px] font-medium bg-black/50 text-white">
-            原图
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center shrink-0 text-2xl text-muted-foreground font-light px-1">
-        <ChevronRight size={28} />
-        <ChevronRight size={28} className="-ml-3" />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div
-          className={`relative aspect-[4/5] max-h-[420px] rounded-xl border overflow-hidden bg-[#0f1419] group transition-all ${
-            selected ? "border-primary ring-2 ring-primary/35" : "border-border"
-          }`}
-        >
-          {isVideo ? (
-            <>
-              <img src={item.resultUrl} alt="生成视频" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-md">
-                  <span className="ml-1 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground" />
-                </div>
-              </div>
-            </>
-          ) : (
-            <img src={item.resultUrl} alt="结果图" className="w-full h-full object-contain" />
-          )}
-
-          <span className="absolute bottom-3 left-3 px-2 py-0.5 rounded text-[11px] font-medium bg-black/50 text-white">
-            {isVideo ? "结果视频" : "结果图"}
-          </span>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDiscard();
-            }}
-            title="废弃"
-            className="absolute top-3 right-3 flex items-center justify-center w-8 h-8 rounded-full bg-black/50 text-white/90 hover:bg-black/70 transition-colors"
-          >
-            <Ban size={16} />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleSelect();
-            }}
-            className={`absolute top-3 left-3 flex items-center justify-center w-5 h-5 rounded border transition-colors ${
-              selected
-                ? "bg-primary border-primary text-white"
-                : "bg-black/40 border-white/60 hover:border-white"
-            }`}
-          >
-            {selected ? <Check size={12} strokeWidth={3} /> : null}
-          </button>
-
-          {!isVideo && (
-            <button
-              type="button"
-              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none"
-              aria-label="预览"
-            >
-              <Eye size={28} className="text-white drop-shadow-md" />
-            </button>
-          )}
-
-          <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {!isVideo && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRecreate();
-                }}
-                className="flex items-center gap-1 h-8 px-3 rounded-md bg-black/60 text-white text-[12px] hover:bg-black/80"
-              >
-                <RefreshCw size={14} />
-                再次创作
-              </button>
-            )}
-            <a
-              href={item.resultUrl}
-              download
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 h-8 px-3 rounded-md bg-black/60 text-white text-[12px] hover:bg-black/80"
-            >
-              <Download size={14} />
-              下载
-            </a>
-            {!isVideo && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSmartEdit();
-                }}
-                className="flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-white text-[12px] hover:bg-primary/90"
-              >
-                <Pencil size={14} />
-                智能编辑
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -289,7 +113,14 @@ export function FeatureTaskDetailPage({
   };
 
   const handleDownload = () => {
-    getSelectedItems().forEach((item) => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    addDownloadRecord({
+      title: `${FEATURE_TASK_LABELS[taskType]}-批量下载-${task.batch}`,
+      count: selected.length,
+    });
+    showDownloadStartedSuccess();
+    selected.forEach((item) => {
       const a = document.createElement("a");
       a.href = item.resultUrl;
       a.download = "";
@@ -348,6 +179,7 @@ export function FeatureTaskDetailPage({
   };
 
   const activeItems = task.items.filter((i) => !i.discarded);
+  const sourceUrl = task.sourceUrls?.[0] ?? task.items[0]?.sourceUrl ?? task.preview;
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-background relative">
@@ -361,6 +193,14 @@ export function FeatureTaskDetailPage({
         </button>
         <button
           type="button"
+          onClick={() => {
+            const count = activeItems.length;
+            addDownloadRecord({
+              title: `${FEATURE_TASK_LABELS[taskType]}-全部下载-${task.batch}`,
+              count,
+            });
+            showDownloadStartedSuccess();
+          }}
           className="h-8 px-3 rounded-md border border-border text-[12px] text-foreground hover:bg-muted/40"
         >
           下载全部
@@ -426,7 +266,6 @@ export function FeatureTaskDetailPage({
 
       <div className="px-6 py-2 text-[13px] text-muted-foreground shrink-0">
         {FEATURE_TASK_LABELS[taskType]} · 任务详情
-        {task.remark && <span className="ml-2 text-foreground">（{task.remark}）</span>}
       </div>
 
       <div
@@ -450,21 +289,21 @@ export function FeatureTaskDetailPage({
         )}
 
         {task.status === "已完成" && (
-          <div className="space-y-8 max-w-[1100px] mx-auto">
-            {task.items.map((item) => (
-              <ResultPairCard
-                key={item.id}
-                item={item}
-                taskType={taskType}
-                taskId={task.id}
-                selected={selectedIds.has(item.id)}
-                onToggleSelect={() => toggleSelect(item.id)}
-                onDiscard={() => discardFeatureTaskItem(taskType, task.id, item.id, true)}
-                onRecreate={() => setRecreateItemId(item.id)}
-                onSmartEdit={() => setSmartEditItemId(item.id)}
-              />
-            ))}
-          </div>
+          <TaskResultComparisonPanel
+            sourceUrl={sourceUrl}
+            generated={task.items.map((item, index) => ({
+              id: item.id,
+              url: item.resultUrl,
+              mediaKind: item.mediaKind,
+              selected: selectedIds.has(item.id),
+              discarded: item.discarded,
+              label: item.mediaKind === "video" ? `结果视频 ${index + 1}` : `结果图 ${index + 1}`,
+            }))}
+            onToggleGenerated={toggleSelect}
+            onDiscardGenerated={(id) => discardFeatureTaskItem(taskType, task.id, id, true)}
+            onSmartEditGenerated={setSmartEditItemId}
+            onRecreateGenerated={setRecreateItemId}
+          />
         )}
       </div>
 
@@ -477,7 +316,6 @@ export function FeatureTaskDetailPage({
         onDownload={handleDownload}
         onDiscard={handleBatchDiscard}
         onRecover={handleBatchRecover}
-        onTag={() => showTaskActionSuccess("打标签功能即将上线")}
         onOpenFeature={openFeature}
       />
 

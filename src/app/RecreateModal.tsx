@@ -30,15 +30,15 @@ export function RecreateModal({
   return (
     <Dialog.Root open={open} onOpenChange={(value) => !value && handleClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/60" />
-        <Dialog.Content className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-[#151515] text-white">
-          <div className="relative flex h-[68px] shrink-0 items-center justify-center border-b border-white/8 bg-[#1f1f1f]">
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40" />
+        <Dialog.Content className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-background text-foreground">
+          <div className="relative flex h-[68px] shrink-0 items-center justify-center border-b border-border bg-card">
             <Dialog.Title className="sr-only">再次创作</Dialog.Title>
-            <div className="flex items-center overflow-hidden rounded-md bg-black">
+            <div className="flex items-center overflow-hidden rounded-md border border-border bg-muted/50">
               <button
                 type="button"
                 onClick={() => setZoom((value) => Math.max(50, value - 10))}
-                className="flex h-8 w-8 items-center justify-center border-r border-white/10 text-white hover:bg-white/10"
+                className="flex h-8 w-8 items-center justify-center border-r border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="缩小"
               >
                 <Minus size={16} />
@@ -49,7 +49,7 @@ export function RecreateModal({
               <button
                 type="button"
                 onClick={() => setZoom((value) => Math.min(200, value + 10))}
-                className="flex h-8 w-8 items-center justify-center border-l border-white/10 text-white hover:bg-white/10"
+                className="flex h-8 w-8 items-center justify-center border-l border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="放大"
               >
                 <Plus size={16} />
@@ -60,14 +60,14 @@ export function RecreateModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="h-9 rounded-md border border-white/10 bg-[#242424] px-5 text-[14px] text-white/90 hover:bg-[#2c2c2c]"
+                className="h-9 rounded-md border border-border bg-background px-5 text-[14px] text-foreground hover:bg-muted/50"
               >
                 取消
               </button>
               <button
                 type="button"
                 disabled={!prompt.trim()}
-                className="h-9 rounded-md bg-white/10 px-5 text-[14px] text-white/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-9 rounded-md bg-muted px-5 text-[14px] text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 保存，并覆盖原图
               </button>
@@ -75,7 +75,7 @@ export function RecreateModal({
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#151515] p-5">
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-muted/30 p-5">
               <div
                 className="flex max-h-full max-w-full items-center justify-center transition-transform duration-150"
                 style={{ transform: `scale(${zoom / 100})` }}

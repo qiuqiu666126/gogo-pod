@@ -47,13 +47,11 @@ export function WorkflowNewTaskModal({
   onSubmit: (input: {
     template: WorkflowTemplate;
     assets: UploadedAsset[];
-    remark: string;
   }) => void;
   onGoCreateWorkflow?: () => void;
 }) {
   useWorkflowTemplateVersion();
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
-  const [remark, setRemark] = useState("");
   const [source, setSource] = useState<WorkflowTemplateSource>("official");
   const [category, setCategory] = useState<WorkflowCategory>(initialCategory);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,7 +66,6 @@ export function WorkflowNewTaskModal({
   useEffect(() => {
     if (!open) {
       setAssets([]);
-      setRemark("");
       return;
     }
     if (initialTemplate) {
@@ -109,7 +106,7 @@ export function WorkflowNewTaskModal({
       showTaskError("请选择工作流模板");
       return;
     }
-    onSubmit({ template: selectedTemplate, assets, remark });
+    onSubmit({ template: selectedTemplate, assets });
     onClose();
   };
 
@@ -220,17 +217,7 @@ export function WorkflowNewTaskModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-border/80 px-5 py-4 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                const text = window.prompt("任务备注", remark);
-                if (text !== null) setRemark(text);
-              }}
-              className="h-9 px-4 rounded-md border border-border text-[13px] text-foreground hover:bg-muted/40"
-            >
-              任务备注
-            </button>
+          <div className="flex items-center justify-end border-t border-border/80 px-5 py-4 shrink-0">
             <div className="flex items-center gap-3">
               <button
                 type="button"

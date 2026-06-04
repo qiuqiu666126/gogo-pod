@@ -1,6 +1,7 @@
 import { Info } from "lucide-react";
 import type { FormControl, FormControlOption, FormValue } from "../../shared/sceneFormSchema";
 import { collectVisibleControls } from "../../shared/sceneFormSchema";
+import { HoverImagePreview } from "./HoverImagePreview";
 
 export function previewFieldDomId(fieldId: string) {
   return `scene-preview-field-${fieldId}`;
@@ -270,14 +271,10 @@ function StyleCardOption({
       }`}
     >
       <div className="text-center text-[13px] font-medium text-foreground">{option.label}</div>
-      <div className="mt-2 overflow-hidden rounded-lg border border-border/70 bg-muted/50">
+      <div className="mt-2 rounded-lg border border-border/70 bg-muted/50">
         {option.thumbnailUrl ? (
           <div className="relative h-20">
-            <img
-              src={option.thumbnailUrl}
-              alt={option.label}
-              className="h-full w-full object-cover"
-            />
+            <HoverImagePreview src={option.thumbnailUrl} alt={option.label} />
             <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/30 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center pb-2 text-[26px] font-semibold text-foreground">
               {previewText}

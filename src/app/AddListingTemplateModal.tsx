@@ -153,14 +153,6 @@ export function AddListingTemplateModal({
                             <span className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
                               {template.storeName}
                             </span>
-                            {template.suitableFor.slice(0, 2).map((tag) => (
-                              <span
-                                key={tag}
-                                className="rounded-md bg-accent px-2 py-1 text-[11px] text-primary"
-                              >
-                                {tag}
-                              </span>
-                            ))}
                           </div>
                         </button>
                       );

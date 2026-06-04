@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import {
   registerNavigateToMySpace,
+  registerNavigateToDownloadCenter,
+  registerNavigateToProductLibrary,
   registerNavigateToTaskCenter,
   registerNavigateToWorkflowList,
 } from "./appNavigation";
 import { WorkflowPage } from "./WorkflowPage";
-import { addWorkflowTask } from "./workflowTasks";
+import { addWorkflowTask, useWorkflowTasks } from "./workflowTasks";
 import { PublishPage } from "./PublishPage";
 import { TaskCenterPage } from "./TaskCenterPage";
 import { DesignPage } from "./DesignPage";
@@ -62,6 +64,11 @@ import {
   type WorkflowTemplate,
 } from "./workflowTemplateStore";
 import { frontendLogout, useFrontendSession } from "./auth/useFrontendSession";
+import {
+  favoriteFeatureMeta,
+  useFavoriteFeatureIds,
+  type FavoriteFeatureId,
+} from "./favoriteFeatures";
 
 // ─── Sidebar nav ────────────────────────────────────────────────────────────
 const sidebarNav = [
@@ -87,44 +94,12 @@ const quickStartBlank = {
   openModal: true,
 };
 
-const quickStartTextToImage = {
-  id: "text2img",
-  icon: <PenTool size={22} className="text-primary" />,
-  title: "文生图",
-  desc: "输入提示词，AI 生成图片",
-  gradient: "from-orange-50 to-amber-50",
-  borderColor: "border-orange-200/80",
-  hoverGlow: "hover:border-primary/35",
-};
-
-const quickStartPatternExtract = {
-  id: "pattern",
-  icon: <Layers size={22} className="text-amber-600" />,
-  title: "印花图提取",
-  desc: "不惧模糊遮挡透视，独家支持多比例提取",
-  gradient: "from-amber-50 to-yellow-50",
-  borderColor: "border-amber-200/80",
-  hoverGlow: "hover:border-primary/35",
-};
-
-const quickStartCrackImage = {
-  id: "crack",
-  icon: <Sparkles size={22} className="text-orange-500" />,
-  title: "图裂变",
-  desc: "识别图案卖点裂变图案",
-  gradient: "from-orange-50 to-rose-50",
-  borderColor: "border-orange-200/70",
-  hoverGlow: "hover:border-primary/35",
-};
-
-const quickStartFeatureCards = [quickStartTextToImage, quickStartPatternExtract, quickStartCrackImage];
-
 // ─── Recommendations ─────────────────────────────────────────────────────────
 const recommendations = [
-  { id: 1, title: "2D印花秒变3D效果 Etsy爆款月入10w+", desc: "3D立体印花 · 爆款玩法", tag: "热门", tagColor: "text-orange-400 bg-orange-400/10", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
-  { id: 2, title: "手机壳高还原度跟款", desc: "支持iPhone · 三星全系", tag: "新品", tagColor: "text-emerald-400 bg-emerald-400/10", img: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
-  { id: 3, title: "帆布包爆款二创玩法", desc: "文艺风设计 · 多色配色", tag: "推荐", tagColor: "text-violet-400 bg-violet-400/10", img: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
-  { id: 4, title: "儿童节印花系列", desc: "卡通风格 · 批量定制", tag: "热门", tagColor: "text-orange-400 bg-orange-400/10", img: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
+  { id: 1, title: "2D印花秒变3D效果 Etsy爆款月入10w+", desc: "3D立体印花 · 爆款玩法", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
+  { id: 2, title: "手机壳高还原度跟款", desc: "支持iPhone · 三星全系", img: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
+  { id: 3, title: "帆布包爆款二创玩法", desc: "文艺风设计 · 多色配色", img: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
+  { id: 4, title: "儿童节印花系列", desc: "卡通风格 · 批量定制", img: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
 ];
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -365,6 +340,9 @@ export default function App() {
   const [playVideoModalOpen, setPlayVideoModalOpen] = useState(false);
   const [pluginCollectionEntryKey, setPluginCollectionEntryKey] = useState(0);
   const [productSetEntryKey, setProductSetEntryKey] = useState(0);
+  const [designFeatureEntry, setDesignFeatureEntry] = useState<{ id: FavoriteFeatureId; key: number } | null>(null);
+  const favoriteFeatureIds = useFavoriteFeatureIds();
+  const quickStartFeatureCards = favoriteFeatureIds.map((id) => favoriteFeatureMeta[id]);
   const [workflowListOpen, setWorkflowListOpen] = useState(false);
   const [workflowView, setWorkflowView] = useState<"list" | "templates">("list");
   const [workflowModalTitle, setWorkflowModalTitle] = useState("创建工作流");
@@ -372,6 +350,10 @@ export default function App() {
   const [newTaskInitialTemplate, setNewTaskInitialTemplate] = useState<WorkflowTemplate | null>(null);
   const [newTaskInitialCategory, setNewTaskInitialCategory] = useState<WorkflowCategory>("服饰");
   const taskCenterRecords = useTaskCenterRecords();
+  const workflowTasks = useWorkflowTasks();
+  const runningTaskCount =
+    taskCenterRecords.filter((task) => task.status === "运行中").length +
+    workflowTasks.filter((task) => task.status === "运行中").length;
   const recentTasks = taskCenterRecords.slice(0, 4).map((task) => ({
     id: task.id,
     name: `${task.typeLabel} — ${task.batch}`,
@@ -399,6 +381,18 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => {
+    return registerNavigateToProductLibrary(() => {
+      setActiveNav("publish");
+    });
+  }, []);
+
+  useEffect(() => {
+    return registerNavigateToDownloadCenter(() => {
+      setActiveNav("downloads");
+    });
+  }, []);
+
   const goToTaskCenterAfterWorkflowSubmit = () => {
     setNewTaskModalOpen(false);
     setActiveNav("tasks");
@@ -413,14 +407,12 @@ export default function App() {
   const handleWorkflowTaskSubmit = (input: {
     template: WorkflowTemplate;
     assets: import("./api/uploadApi").UploadedAsset[];
-    remark: string;
   }) => {
     const preview = input.assets[0]?.url;
     addWorkflowTask({
       steps: input.template.steps,
       templateName: input.template.name,
       preview,
-      remark: input.remark || undefined,
     });
     goToTaskCenterAfterWorkflowSubmit();
   };
@@ -517,6 +509,11 @@ export default function App() {
                 )}
                 <Icon size={16} className={isActive ? "text-primary" : "text-sidebar-foreground group-hover:text-foreground"} />
                 <span className="flex-1 text-left">{item.label}</span>
+                {item.id === "tasks" && runningTaskCount > 0 ? (
+                  <span className="ml-auto flex min-w-5 h-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-none text-white shadow-sm">
+                    {runningTaskCount > 99 ? "99+" : runningTaskCount}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -560,6 +557,7 @@ export default function App() {
             onOpenCrack={() => setCrackModalOpen(true)}
             onOpenText2img={() => setTextToImageModalOpen(true)}
             productSetEntryKey={productSetEntryKey}
+            featureEntry={designFeatureEntry}
           />
         ) : activeNav === "video" ? (
           <VideoPage />
@@ -682,9 +680,8 @@ export default function App() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    if (item.id === "text2img") setTextToImageModalOpen(true);
-                    if (item.id === "pattern") setPatternModalOpen(true);
-                    if (item.id === "crack") setCrackModalOpen(true);
+                    setActiveNav("design");
+                    setDesignFeatureEntry({ id: item.id, key: Date.now() });
                   }}
                   className={`group relative flex h-[156px] flex-col items-start gap-3 p-4 rounded-xl border bg-gradient-to-br ${item.gradient} ${item.borderColor} ${item.hoverGlow} hover:shadow-lg transition-all duration-200 text-left`}
                 >
@@ -780,9 +777,6 @@ export default function App() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span className={`absolute top-2.5 left-2.5 text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${item.tagColor}`}>
-                      {item.tag}
-                    </span>
                   </div>
                   <div className="p-3.5">
                     <div className="text-[13px] font-semibold text-foreground mb-0.5">{item.title}</div>

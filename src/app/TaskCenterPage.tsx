@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Calendar, Inbox } from "lucide-react";
+import { addDownloadRecord } from "./downloadCenterStore";
 import { FeatureTaskDetailPage } from "./FeatureTaskDetailPage";
 import { WorkflowTaskDetailPage } from "./WorkflowTaskDetailPage";
 import {
@@ -15,6 +16,7 @@ import {
   type WorkflowTask,
   type WorkflowTaskStatus,
 } from "./workflowTasks";
+import { showDownloadStartedSuccess } from "./taskToast";
 
 const filterSelectClass =
   "h-9 min-w-[120px] rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground outline-none focus:border-primary/60";
@@ -75,7 +77,7 @@ export function TaskCenterPage({ onNavigateDownloads }: { onNavigateDownloads?: 
     const wfRows: TaskCenterListRow[] = workflowTasks.map((task) => ({
       kind: "workflow",
       id: task.id,
-      typeLabel: task.remark ? `工作流 · ${task.remark}` : "工作流",
+      typeLabel: "工作流",
       task,
       preview: task.preview,
       batch: task.batch,
@@ -169,7 +171,6 @@ export function TaskCenterPage({ onNavigateDownloads }: { onNavigateDownloads?: 
           value={batchQuery}
           onChange={(e) => setBatchQuery(e.target.value)}
         />
-        <input className={filterInputClass} placeholder="备注" />
         <select
           className={filterSelectClass}
           value={statusFilter}
@@ -274,15 +275,16 @@ export function TaskCenterPage({ onNavigateDownloads }: { onNavigateDownloads?: 
                         <button
                           type="button"
                           disabled={row.status !== "已完成"}
+                          onClick={() => {
+                            addDownloadRecord({
+                              title: `${row.typeLabel}-下载-${row.batch}`,
+                              count: Math.max(1, row.success || row.total),
+                            });
+                            showDownloadStartedSuccess();
+                          }}
                           className="text-left text-[13px] text-primary hover:text-primary/80 disabled:text-muted-foreground disabled:cursor-not-allowed"
                         >
                           下载
-                        </button>
-                        <button
-                          type="button"
-                          className="text-left text-[13px] text-primary hover:text-primary/80"
-                        >
-                          备注
                         </button>
                         <button
                           type="button"

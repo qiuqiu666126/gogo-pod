@@ -5,7 +5,7 @@ import type { UploadedAsset } from "./api/uploadApi";
 import { INITIAL_SPACE_IMAGES } from "./mySpaceData";
 
 const selectClass =
-  "h-9 min-w-[120px] rounded-md border border-[#3a3a3a] bg-[#171717] px-3 text-[13px] text-[#e5e5e5] outline-none";
+  "h-9 min-w-[120px] rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground outline-none focus:border-primary/60";
 
 export function MySpacePickerModal({
   open,
@@ -60,30 +60,30 @@ export function MySpacePickerModal({
   return (
     <Dialog.Root open={open} onOpenChange={(value) => !value && handleClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/60" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[90] flex h-[min(92vh,880px)] w-[min(1560px,96vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-[#3a3a3a] bg-[#161616] text-white shadow-2xl">
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/8 px-5">
+        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[90] flex h-[min(92vh,880px)] w-[min(1560px,96vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-border bg-card text-foreground shadow-2xl">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
             <div className="flex items-center gap-8 text-[13px] font-semibold">
               <button type="button" className="text-primary">
                 按素材选取
               </button>
-              <button type="button" className="text-white/80 hover:text-white">
+              <button type="button" className="text-muted-foreground hover:text-foreground">
                 按任务批次选取
               </button>
-              <button type="button" className="text-white/80 hover:text-white">
+              <button type="button" className="text-muted-foreground hover:text-foreground">
                 从智能检索选取
               </button>
             </div>
             <button
               type="button"
               onClick={handleClose}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/6 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             >
               <X size={18} />
             </button>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3 border-b border-white/8 px-5 py-3">
+          <div className="flex shrink-0 items-center gap-3 border-b border-border px-5 py-3">
             <button className="flex h-8 items-center gap-2 rounded-md bg-primary px-4 text-[13px] text-white hover:bg-primary/90">
               <Upload size={14} />
               上传图片
@@ -95,7 +95,7 @@ export function MySpacePickerModal({
           </div>
 
           <div className="flex shrink-0 items-center gap-3 px-5 py-4">
-            <label className="flex items-center gap-2 text-[13px] text-white cursor-pointer">
+            <label className="flex items-center gap-2 text-[13px] text-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -112,8 +112,7 @@ export function MySpacePickerModal({
             </select>
             <input className={`${selectClass} w-[170px]`} placeholder="来源" />
             <input className={`${selectClass} w-[160px]`} placeholder="批次" />
-            <input className={`${selectClass} w-[160px]`} placeholder="标签" />
-            <div className="flex h-9 items-center gap-2 rounded-md border border-[#3a3a3a] bg-[#171717] px-3 text-[13px] text-white/65">
+            <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-input-background px-3 text-[13px] text-muted-foreground">
               <span>开始日期</span>
               <span>→</span>
               <span>结束日期</span>
@@ -130,8 +129,8 @@ export function MySpacePickerModal({
                     key={item.id}
                     type="button"
                     onClick={() => toggleSelect(item.id)}
-                    className={`group relative overflow-hidden rounded-md border bg-[#2a2a2a] text-left transition-colors ${
-                      selected ? "border-primary ring-1 ring-primary/50" : "border-transparent hover:border-white/20"
+                    className={`group relative overflow-hidden rounded-md border bg-muted/30 text-left transition-colors ${
+                      selected ? "border-primary ring-1 ring-primary/50" : "border-border hover:border-primary/40"
                     }`}
                   >
                     <img src={item.src} alt={item.name} className="aspect-square w-full object-cover" />
@@ -144,11 +143,11 @@ export function MySpacePickerModal({
             </div>
           </div>
 
-          <div className="flex h-14 shrink-0 items-center justify-end gap-4 border-t border-white/8 px-6">
+          <div className="flex h-14 shrink-0 items-center justify-end gap-4 border-t border-border px-6">
             <button
               type="button"
               onClick={handleClose}
-              className="h-8 rounded-md border border-white/10 px-6 text-[13px] text-white/85 hover:bg-white/6"
+              className="h-8 rounded-md border border-border px-6 text-[13px] text-foreground hover:bg-muted/50"
             >
               取消
             </button>

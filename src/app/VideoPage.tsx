@@ -13,7 +13,6 @@ const filterInputClass =
 const examples = [
   {
     id: "model",
-    tag: "示例",
     title: "模特动作",
     before:
       "https://images.unsplash.com/photo-1529139574466-a303027c1d7b?w=320&h=240&fit=crop&auto=format",
@@ -23,7 +22,6 @@ const examples = [
   },
   {
     id: "product",
-    tag: "示例",
     title: "商品律动",
     before:
       "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=320&h=240&fit=crop&auto=format",
@@ -59,7 +57,6 @@ export function VideoPage() {
             新建任务
           </button>
           <input className={filterInputClass} placeholder="批次" />
-          <input className={filterInputClass} placeholder="备注" />
           <select className={filterSelectClass} defaultValue="all">
             <option value="all">全部状态</option>
             <option value="completed">已完成</option>
@@ -100,9 +97,6 @@ export function VideoPage() {
                     className="rounded-2xl border border-border bg-card overflow-hidden min-h-[280px] flex flex-col"
                   >
                     <div className="px-4 py-3 border-b border-border/60">
-                      <span className="text-[11px] font-semibold text-primary border border-primary/30 px-1.5 py-0.5 rounded mr-2">
-                        {item.tag}
-                      </span>
                       <span className="text-[14px] font-semibold text-foreground">{item.title}</span>
                     </div>
                     <div className="flex-1 flex items-center gap-2 p-4">

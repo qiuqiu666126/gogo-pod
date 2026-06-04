@@ -8,7 +8,6 @@ import {
   Search,
   ShieldCheck,
   Store,
-  Tag,
 } from "lucide-react";
 
 import { AdminShell } from "../components/AdminShell";
@@ -263,22 +262,9 @@ export function PublishTemplatesAdminPage() {
                           <Store size={13} />
                           <span>{template.storeName || "未配置店铺"} · {template.site || "未配置站点"}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Tag size={13} />
-                          <span className="truncate">{template.categoryPath || "未配置 Temu 类目"}</span>
-                        </div>
+                        <div className="truncate">{template.categoryPath || "未配置 Temu 类目"}</div>
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {template.suitableFor.slice(0, 3).map((item) => (
-                          <span
-                            key={item}
-                            className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
                     </button>
                   );
                 })
@@ -405,14 +391,6 @@ export function PublishTemplatesAdminPage() {
                             placeholder="说明这个模板适合哪些商品，以及为什么要这样配置。"
                           />
                         </Field>
-                        <Field label="适用品类标签" hint="一行一个，例如：女装 / 基础款 / 多尺码" className="md:col-span-2">
-                          <textarea
-                            className={textareaCls}
-                            value={joinLines(editing.suitableFor)}
-                            onChange={(event) => setEditing({ ...editing, suitableFor: splitLines(event.target.value) })}
-                            placeholder={"女装\n基础款\n多尺码"}
-                          />
-                        </Field>
                       </div>
                     </Card>
 
@@ -426,23 +404,6 @@ export function PublishTemplatesAdminPage() {
                           <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
                             前台会展示模板名称、描述、店铺、站点、适用品类和规则摘要，帮助用户选择合适模板。
                           </p>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-[12px] font-medium text-foreground">当前会展示的标签</p>
-                          <div className="flex flex-wrap gap-2">
-                            {editing.suitableFor.length > 0 ? (
-                              editing.suitableFor.map((item) => (
-                                <span
-                                  key={item}
-                                  className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground"
-                                >
-                                  {item}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[12px] text-muted-foreground">暂无标签</span>
-                            )}
-                          </div>
                         </div>
                         <Field label="排序">
                           <input

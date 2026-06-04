@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Calendar, Trash2 } from "lucide-react";
 import { INITIAL_SPACE_IMAGES, type SpaceImage } from "./mySpaceData";
+import { addDownloadRecord } from "./downloadCenterStore";
+import { showDownloadStartedSuccess } from "./taskToast";
 
 const filterSelectClass =
   "h-9 w-full min-w-0 rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground outline-none focus:border-primary/60";
@@ -12,10 +14,15 @@ export function MySpacePage() {
   const [images, setImages] = useState<SpaceImage[]>(INITIAL_SPACE_IMAGES);
   const [batchMode, setBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sourceFilter, setSourceFilter] = useState<"全部" | "采集" | "素材">("全部");
 
   const selectedCount = selectedIds.size;
   const showBatchBar = batchMode && selectedCount > 0;
-  const allSelected = images.length > 0 && selectedCount === images.length;
+  const filteredImages = useMemo(
+    () => images.filter((item) => sourceFilter === "全部" || item.source === sourceFilter),
+    [images, sourceFilter],
+  );
+  const allSelected = filteredImages.length > 0 && filteredImages.every((item) => selectedIds.has(item.id));
 
   const stats = useMemo(() => {
     const collect = images.filter((i) => i.source === "采集").length;
@@ -36,7 +43,7 @@ export function MySpacePage() {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(images.map((i) => i.id)));
+      setSelectedIds(new Set(filteredImages.map((i) => i.id)));
     }
   };
 
@@ -54,6 +61,18 @@ export function MySpacePage() {
     setBatchMode(true);
   };
 
+  const applySourceFilter = (next: "全部" | "采集" | "素材") => {
+    setSourceFilter(next);
+    setSelectedIds(new Set());
+  };
+
+  const cardClass = (active: boolean) =>
+    `rounded-xl border p-4 text-left transition-all ${
+      active
+        ? "border-primary bg-primary/5 shadow-[0_0_0_1px_rgba(242,100,25,0.16)]"
+        : "border-border bg-card hover:border-primary/40 hover:bg-muted/20"
+    }`;
+
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden relative">
       <div className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
@@ -70,12 +89,6 @@ export function MySpacePage() {
           >
             {batchMode ? "取消批量操作" : "批量操作"}
           </button>
-          <button
-            type="button"
-            className="h-8 px-4 rounded-md border border-border text-[13px] text-foreground hover:bg-muted/50 transition-colors"
-          >
-            标签管理
-          </button>
         </div>
       </div>
 
@@ -83,25 +96,25 @@ export function MySpacePage() {
         className={`flex-1 overflow-auto px-6 py-5 scrollbar-none ${showBatchBar ? "pb-28" : ""}`}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <div className="rounded-xl border border-border bg-card p-4">
+          <button type="button" onClick={() => applySourceFilter("全部")} className={cardClass(sourceFilter === "全部")}>
             <div className="text-[12px] text-muted-foreground mb-1">全部</div>
             <div className="text-[14px] font-semibold text-foreground">已使用1%</div>
             <div className="text-[11px] text-muted-foreground mt-0.5">0.01GB/1GB</div>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
+          </button>
+          <button type="button" onClick={() => applySourceFilter("采集")} className={cardClass(sourceFilter === "采集")}>
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1">
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               采集
             </div>
             <div className="text-[14px] font-semibold text-foreground">{stats.collect} 张</div>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
+          </button>
+          <button type="button" onClick={() => applySourceFilter("素材")} className={cardClass(sourceFilter === "素材")}>
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1">
               <span className="w-2 h-2 rounded-full bg-blue-400" />
               素材
             </div>
             <div className="text-[14px] font-semibold text-foreground">{stats.material} 张</div>
-          </div>
+          </button>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between mb-2">
               <div className="text-[12px] text-muted-foreground">存储容量</div>
@@ -123,20 +136,18 @@ export function MySpacePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 mb-5">
-          <select className={filterSelectClass} defaultValue="">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 mb-5">
+          <select
+            className={filterSelectClass}
+            value={sourceFilter === "全部" ? "" : sourceFilter}
+            onChange={(event) => applySourceFilter((event.target.value || "全部") as "全部" | "采集" | "素材")}
+          >
             <option value="">全部来源</option>
             <option value="采集">采集</option>
             <option value="素材">素材</option>
           </select>
           <input className={filterInputClass} placeholder="批次" />
-          <select className={filterSelectClass} defaultValue="">
-            <option value="">全部是否有标签</option>
-          </select>
           <input className={filterInputClass} placeholder="请输入图片名称" />
-          <select className={filterSelectClass} defaultValue="">
-            <option value="">请选择标签</option>
-          </select>
           <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-input-background text-[13px] text-muted-foreground">
             <span>开始日期</span>
             <span>→</span>
@@ -160,7 +171,7 @@ export function MySpacePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {images.map((item) => {
+          {filteredImages.map((item) => {
             const selected = selectedIds.has(item.id);
             return (
               <div
@@ -239,21 +250,13 @@ export function MySpacePage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => {
+                addDownloadRecord({ title: `我的空间-批量下载`, count: selectedCount });
+                showDownloadStartedSuccess();
+              }}
               className="h-9 px-4 rounded-md border border-border bg-background text-[13px] text-foreground hover:bg-muted/50 transition-colors"
             >
               下载
-            </button>
-            <button
-              type="button"
-              className="h-9 px-4 rounded-md border border-border bg-background text-[13px] text-foreground hover:bg-muted/50 transition-colors"
-            >
-              打标签
-            </button>
-            <button
-              type="button"
-              className="h-9 px-4 rounded-md border border-border bg-background text-[13px] text-foreground hover:bg-muted/50 transition-colors"
-            >
-              移除标签
             </button>
             <button
               type="button"

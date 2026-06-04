@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Calendar, Check, HelpCircle, Image, Inbox, Plus, Sparkles, X } from "lucide-react";
 import { DEFAULT_OPERATOR } from "./appConstants";
+import { addDownloadRecord } from "./downloadCenterStore";
 import { ProductDetailPage } from "./ProductDetailPage";
 import { deleteProduct, useProducts } from "./productLibrary";
+import { showDownloadStartedSuccess } from "./taskToast";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +19,7 @@ const filterInputClass =
   "h-9 w-full min-w-0 rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60";
 
 const batchBarButtonClass =
-  "h-8 px-4 rounded-md bg-[#3f4247] text-white text-[13px] font-normal hover:bg-[#34373c] transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
+  "h-8 px-4 rounded-md border border-border bg-background text-foreground text-[13px] font-normal hover:bg-muted/50 transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
 
 function OnboardingCard({
   title,
@@ -54,7 +56,7 @@ function PluginCollectionPreview() {
     <div className="rounded-lg border border-border bg-muted/30 p-3">
       <div className="rounded-md border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/70 text-[11px] text-muted-foreground">
-          <span className="text-primary font-medium">数据采集</span>
+          <span className="text-primary font-medium">插件采集</span>
           <span>插件采集列表</span>
         </div>
         <div className="grid grid-cols-4 gap-1.5 p-2">
@@ -389,15 +391,15 @@ export function ProductLibraryContent({
 
       {showBatchBar && (
         <div className="absolute bottom-0 left-0 right-0 z-30 px-2 pb-2 pointer-events-none">
-          <div className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-md bg-[#5a6068] px-4 py-2 shadow-[0_8px_28px_rgba(0,0,0,0.28)]">
-            <label className="flex items-center gap-2 text-[13px] text-white cursor-pointer shrink-0">
+          <div className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-md border border-border bg-card px-4 py-2 shadow-[0_8px_28px_rgba(15,23,42,0.12)]">
+            <label className="flex items-center gap-2 text-[13px] text-foreground cursor-pointer shrink-0">
               <span className="relative flex h-4 w-4 items-center justify-center">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={(event) => toggleSelectAll(event.target.checked)}
-                  className="peer h-4 w-4 appearance-none rounded-full border border-white/45 bg-white/18 checked:border-[#ff7a3d] checked:bg-[#ff7a3d]"
+                  className="peer h-4 w-4 appearance-none rounded-full border border-border bg-background checked:border-[#ff7a3d] checked:bg-[#ff7a3d]"
                   aria-label="全选"
                 />
                 <Check
@@ -407,8 +409,8 @@ export function ProductLibraryContent({
               </span>
               <span>全选</span>
             </label>
-            <span className="text-[12px] text-white/85 whitespace-nowrap">
-              已选择：<span className="text-white">{selectedCount}</span>项内容
+            <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+              已选择：<span className="text-foreground">{selectedCount}</span>项内容
             </span>
 
             <div className="flex flex-wrap items-center gap-2 ml-auto">
@@ -427,7 +429,14 @@ export function ProductLibraryContent({
               <button type="button" className={batchBarButtonClass}>
                 按模板导出
               </button>
-              <button type="button" className={batchBarButtonClass}>
+              <button
+                type="button"
+                className={batchBarButtonClass}
+                onClick={() => {
+                  addDownloadRecord({ title: "商品库-批量下载", count: selectedCount });
+                  showDownloadStartedSuccess();
+                }}
+              >
                 下载
               </button>
               <button type="button" className={`${batchBarButtonClass} inline-flex items-center gap-1.5`}>
@@ -441,7 +450,7 @@ export function ProductLibraryContent({
               >
                 删除
               </button>
-              <span className="h-5 w-px bg-white/20" />
+              <span className="h-5 w-px bg-border" />
               <button type="button" onClick={clearSelection} className={batchBarButtonClass}>
                 取消选择
               </button>
@@ -451,15 +460,15 @@ export function ProductLibraryContent({
       )}
 
       <Dialog open={listingDialogOpen} onOpenChange={setListingDialogOpen}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-[1400px] w-[calc(100vw-32px)] h-[min(426px,calc(100vh-64px))] translate-y-[-48%] gap-0 rounded-md border-[#3a3a3a] bg-[#1f1f1f] p-0 text-[#d8d8d8] shadow-2xl [&>button]:hidden">
+        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-[1400px] w-[calc(100vw-32px)] h-[min(426px,calc(100vh-64px))] translate-y-[-48%] gap-0 rounded-md border-border bg-card p-0 text-foreground shadow-2xl [&>button]:hidden">
           <DialogTitle className="sr-only">商品刊登</DialogTitle>
           <DialogDescription className="sr-only">
             选择商品刊登模板后开始刊登。
           </DialogDescription>
           <div className="flex h-full flex-col">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#333] px-6">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
               <div className="flex items-center gap-2">
-                <h2 className="text-[17px] font-semibold text-[#dcdcdc]">商品刊登</h2>
+                <h2 className="text-[17px] font-semibold text-foreground">商品刊登</h2>
                 <button
                   type="button"
                   className="text-[12px] font-medium text-[#ff7a3d] hover:text-[#ff8b55]"
@@ -471,7 +480,7 @@ export function ProductLibraryContent({
               <button
                 type="button"
                 onClick={() => setListingDialogOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-[#9ca3af] hover:bg-white/5 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 aria-label="关闭"
               >
                 <X size={18} />
@@ -482,11 +491,11 @@ export function ProductLibraryContent({
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <input
-                    className="h-8 w-[200px] rounded-md border border-[#343434] bg-[#202020] px-3 text-[13px] text-[#e5e5e5] outline-none placeholder:text-[#6f6f6f] focus:border-[#ff6b2c]"
+                    className="h-8 w-[200px] rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:border-[#ff6b2c]"
                     placeholder="模板名称"
                   />
                   <select
-                    className="h-8 w-[200px] rounded-md border border-[#343434] bg-[#202020] px-3 text-[13px] text-[#9ca3af] outline-none focus:border-[#ff6b2c]"
+                    className="h-8 w-[200px] rounded-md border border-border bg-input-background px-3 text-[13px] text-foreground outline-none focus:border-[#ff6b2c]"
                     defaultValue=""
                   >
                     <option value="">请选择模板类型</option>
@@ -499,10 +508,10 @@ export function ProductLibraryContent({
                   </button>
                 </div>
 
-                <label className="flex items-center gap-2 text-[13px] font-medium text-[#cfcfcf]">
+                <label className="flex items-center gap-2 text-[13px] font-medium text-foreground">
                   指定店铺图片查重
                   <input type="checkbox" className="peer sr-only" />
-                  <span className="relative h-4 w-7 rounded-full bg-[#6b6b6b] transition-colors peer-checked:bg-[#ff6b2c]">
+                  <span className="relative h-4 w-7 rounded-full bg-muted transition-colors peer-checked:bg-[#ff6b2c]">
                     <span className="absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-3" />
                   </span>
                 </label>
@@ -512,25 +521,25 @@ export function ProductLibraryContent({
                 <button type="button" className="text-[#ff7a3d]">
                   全部
                 </button>
-                <button type="button" className="flex items-center gap-1 text-[#cfcfcf]">
+                <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
                   未分组
-                  <span className="rounded-sm bg-[#5b5f66] px-1.5 text-[11px] leading-5 text-white">0</span>
+                  <span className="rounded-sm bg-muted px-1.5 text-[11px] leading-5 text-muted-foreground">0</span>
                 </button>
               </div>
 
-              <div className="h-[193px] overflow-hidden border border-[#3b3b3b]">
+              <div className="h-[193px] overflow-hidden border border-border rounded-md">
                 <table className="w-full table-fixed text-[13px]">
                   <thead>
-                    <tr className="h-10 border-b border-[#373737] bg-[#232323] text-left text-[#d2d2d2]">
+                    <tr className="h-10 border-b border-border bg-muted/40 text-left text-muted-foreground">
                       <th className="w-[48px] px-3 font-semibold">选择</th>
                       <th className="px-3 font-semibold">模板名称</th>
-                      <th className="w-[200px] border-l border-[#373737] px-3 font-semibold">更新时间</th>
-                      <th className="w-[200px] border-l border-[#373737] px-3 font-semibold">创建时间</th>
+                      <th className="w-[200px] border-l border-border px-3 font-semibold">更新时间</th>
+                      <th className="w-[200px] border-l border-border px-3 font-semibold">创建时间</th>
                     </tr>
                   </thead>
                 </table>
-                <div className="flex h-[151px] flex-col items-center justify-center text-[#8c8c8c]">
-                  <Inbox size={38} className="mb-2 text-[#555]" />
+                <div className="flex h-[151px] flex-col items-center justify-center text-muted-foreground">
+                  <Inbox size={38} className="mb-2 text-muted-foreground/70" />
                   <span className="text-[13px]">暂无数据</span>
                 </div>
               </div>
@@ -540,7 +549,7 @@ export function ProductLibraryContent({
               <button
                 type="button"
                 onClick={() => setListingDialogOpen(false)}
-                className="h-8 rounded-md border border-[#333] px-5 text-[14px] text-[#e0e0e0] hover:bg-white/5"
+                className="h-8 rounded-md border border-border px-5 text-[14px] text-foreground hover:bg-muted/50"
               >
                 取 消
               </button>

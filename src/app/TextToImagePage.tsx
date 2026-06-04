@@ -108,7 +108,6 @@ export function TextToImagePage({ onBack }: { onBack: () => void }) {
             </button>
           </div>
           <input className={filterInputClass} placeholder="批次" />
-          <input className={filterInputClass} placeholder="备注" />
           <select className={filterSelectClass} defaultValue="all">
             <option value="all">全部状态</option>
           </select>

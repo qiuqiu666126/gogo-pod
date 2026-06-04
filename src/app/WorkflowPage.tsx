@@ -35,18 +35,16 @@ export function WorkflowPage({
   const detailTask = detailTaskId ? tasks.find((t) => t.id === detailTaskId) : null;
   const [creator, setCreator] = useState(DEFAULT_OPERATOR);
   const [batchQuery, setBatchQuery] = useState("");
-  const [remarkQuery, setRemarkQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const filtered = useMemo(() => {
     return tasks.filter((row) => {
       if (statusFilter !== "all" && row.status !== statusFilter) return false;
       if (batchQuery && !row.batch.includes(batchQuery)) return false;
-      if (remarkQuery && !row.remark?.includes(remarkQuery)) return false;
       if (creator && row.operator !== creator) return false;
       return true;
     });
-  }, [tasks, statusFilter, batchQuery, remarkQuery, creator]);
+  }, [tasks, statusFilter, batchQuery, creator]);
 
   if (detailTask) {
     return (
@@ -101,12 +99,6 @@ export function WorkflowPage({
           value={batchQuery}
           onChange={(e) => setBatchQuery(e.target.value)}
         />
-        <input
-          className={filterInputClass}
-          placeholder="备注"
-          value={remarkQuery}
-          onChange={(e) => setRemarkQuery(e.target.value)}
-        />
         <select
           className={filterSelectClass}
           value={statusFilter}
@@ -128,7 +120,6 @@ export function WorkflowPage({
           type="button"
           onClick={() => {
             setBatchQuery("");
-            setRemarkQuery("");
             setStatusFilter("all");
             setCreator(DEFAULT_OPERATOR);
           }}
@@ -209,12 +200,6 @@ export function WorkflowPage({
                         className="text-left text-[13px] text-primary hover:text-primary/80 disabled:text-muted-foreground disabled:cursor-not-allowed"
                       >
                         查看详情
-                      </button>
-                      <button
-                        type="button"
-                        className="text-left text-[13px] text-primary hover:text-primary/80"
-                      >
-                        备注
                       </button>
                       <button
                         type="button"

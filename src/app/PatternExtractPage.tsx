@@ -42,7 +42,6 @@ export function PatternExtractPage({ onBack }: { onBack: () => void }) {
             新建任务
           </button>
           <input className={filterInputClass} placeholder="批次" />
-          <input className={filterInputClass} placeholder="备注" />
           <select className={filterSelectClass} defaultValue="all">
             <option value="all">全部状态</option>
           </select>

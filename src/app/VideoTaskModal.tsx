@@ -8,6 +8,7 @@ import { SelectFromMySpaceButton } from "./SelectFromMySpaceButton";
 import { useInitialAssets } from "./useInitialAssets";
 import { useFeatureSceneTabs, useSceneFormState } from "./hooks/useSceneFormState";
 import type { FormControl, FormControlOption, FormValue } from "../shared/sceneFormSchema";
+import { HoverImagePreview } from "./components/HoverImagePreview";
 
 type PromptEntry = { id: string; text: string };
 
@@ -47,15 +48,15 @@ function VideoOptionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`overflow-hidden rounded-xl border text-left transition-all ${
+      className={`relative rounded-xl border text-left transition-all ${
         active
           ? "border-primary bg-primary/6 shadow-[0_10px_22px_rgba(242,100,25,0.16)]"
           : "border-border bg-card hover:border-primary/40"
       }`}
     >
-      <div className="aspect-[4/5] overflow-hidden bg-muted/30">
+      <div className="aspect-[4/5] bg-muted/30">
         {option.thumbnailUrl ? (
-          <img src={option.thumbnailUrl} alt={option.label} className="h-full w-full object-cover" />
+          <HoverImagePreview src={option.thumbnailUrl} alt={option.label} />
         ) : (
           <div className="flex h-full items-center justify-center text-[22px] font-semibold text-foreground">
             {option.previewText || option.label.slice(0, 2)}

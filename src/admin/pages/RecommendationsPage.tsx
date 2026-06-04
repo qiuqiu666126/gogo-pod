@@ -72,8 +72,8 @@ export function RecommendationsPage() {
   const handleSave = async () => {
     if (!draft) return;
 
-    if (!draft.title?.trim() || !draft.desc?.trim() || !draft.tag?.trim() || !draft.tagColor?.trim() || !draft.img?.trim()) {
-      alert("请填写所有必填字段（标题、描述、标签文字、样式、封面图）");
+    if (!draft.title?.trim() || !draft.desc?.trim() || !draft.img?.trim()) {
+      alert("请填写所有必填字段（标题、描述、封面图）");
       return;
     }
 
@@ -180,12 +180,11 @@ export function RecommendationsPage() {
                     </div>
                   </div>
                   <div className="text-[12px] text-muted-foreground mt-1 truncate">{item.desc}</div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.tagColor}`}>
-                      {item.tag}
-                    </span>
-                    {item.videoUrl && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">有视频</span>}
-                  </div>
+                  {item.videoUrl && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">有视频</span>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -212,22 +211,6 @@ export function RecommendationsPage() {
                       onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
                     />
                   </Field>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="标签文字">
-                      <input
-                        className={inputCls}
-                        value={draft.tag}
-                        onChange={(e) => setDraft({ ...draft, tag: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="标签样式 (Tailwind class)">
-                      <input
-                        className={inputCls}
-                        value={draft.tagColor}
-                        onChange={(e) => setDraft({ ...draft, tagColor: e.target.value })}
-                      />
-                    </Field>
-                  </div>
                   <Field label="排序权重 (数字越小越靠前)">
                     <input
                       type="number"

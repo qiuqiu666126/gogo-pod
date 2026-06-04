@@ -63,9 +63,9 @@ export function SmartEditModal({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
-        <Dialog.Content className="fixed inset-4 z-[70] flex flex-col rounded-2xl border border-border bg-[#1a1d24] shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 h-14 border-b border-border/80 shrink-0">
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" />
+        <Dialog.Content className="fixed inset-4 z-[70] flex flex-col rounded-2xl border border-border bg-card text-foreground shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 h-14 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-2">
               <Dialog.Title className="text-[16px] font-semibold text-foreground">智能编辑</Dialog.Title>
               <span className="text-[11px] font-medium text-emerald-500 border border-emerald-500/40 px-1.5 py-0.5 rounded">
@@ -156,7 +156,7 @@ export function SmartEditModal({
               </div>
             </aside>
 
-            <div className="flex-1 flex items-center justify-center p-8 bg-[#12141a] overflow-auto">
+            <div className="flex-1 flex items-center justify-center p-8 bg-muted/30 overflow-auto">
               <div
                 className="relative max-w-full max-h-full transition-transform duration-150"
                 style={{ transform: `scale(${zoom / 100})` }}
@@ -167,7 +167,7 @@ export function SmartEditModal({
                   className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded-lg shadow-lg"
                 />
                 {dirty && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-[11px] text-white/90">
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full border border-border bg-card/95 text-[11px] text-foreground shadow-sm">
                     已选择「{[...smartTools, ...basicTools].find((t) => t.id === activeTool)?.label}」— 保存后将覆盖结果图
                   </div>
                 )}

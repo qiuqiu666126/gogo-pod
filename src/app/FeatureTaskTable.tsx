@@ -1,5 +1,7 @@
 import { Inbox } from "lucide-react";
+import { addDownloadRecord } from "./downloadCenterStore";
 import type { FeatureTask } from "./featureTasks";
+import { showDownloadStartedSuccess } from "./taskToast";
 
 export function FeatureTaskTable({
   tasks,
@@ -107,12 +109,16 @@ export function FeatureTaskTable({
                   <button
                     type="button"
                     disabled={task.status !== "已完成"}
+                    onClick={() => {
+                      addDownloadRecord({
+                        title: `${task.batch}-下载`,
+                        count: Math.max(1, task.success || task.total),
+                      });
+                      showDownloadStartedSuccess();
+                    }}
                     className="text-left text-primary hover:text-primary/80 disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
                   >
                     下载
-                  </button>
-                  <button type="button" className="text-left text-primary hover:text-primary/80 transition-colors">
-                    备注
                   </button>
                   <button
                     type="button"

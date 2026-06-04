@@ -412,9 +412,9 @@ export function WorkflowBuilderEditor({
         <div
           className="relative flex-1 overflow-auto"
           style={{
-            backgroundColor: "#0f1014",
+            backgroundColor: "#f6f7f9",
             backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(120,120,140,0.25) 1px, transparent 0)",
+              "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.35) 1px, transparent 0)",
             backgroundSize: "16px 16px",
           }}
         >

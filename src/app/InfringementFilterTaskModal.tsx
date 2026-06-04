@@ -53,8 +53,7 @@ export function InfringementFilterTaskModal({
             <TaskMaterialUploadSection assets={assets} onAssetsChange={setAssets} />
 
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-[12px] text-foreground leading-relaxed">
-              部分特殊构图的图案，建议手动进行「图案裁切」功能后，再进行侵权检测。
-              <button className="ml-2 text-primary hover:text-primary/80 transition-colors">示例</button>
+              重要提醒：本服务为 AI 风险预警工具，检测结果基于现有 IP 数据库和算法分析，不构成任何法律意见或侵权保证。请您自行评估所有法律及上架风险。
             </div>
 
             {preset ? (

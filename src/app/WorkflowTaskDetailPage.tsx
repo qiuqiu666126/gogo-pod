@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, Check, ClipboardList, Copy, RefreshCw } from "lucide-react";
 import { addProductsFromImageUrls } from "./productLibrary";
-import { showSaveToProductLibrarySuccess } from "./taskToast";
+import { showDownloadStartedSuccess, showSaveToProductLibrarySuccess } from "./taskToast";
+import { addDownloadRecord } from "./downloadCenterStore";
 import type { UploadedAsset } from "./api/uploadApi";
 import { urlsToUploadedAssets } from "./assetUtils";
 import { CutoutModal } from "./CutoutModal";
@@ -14,6 +15,9 @@ import { assetsToSubmitInput, submitFeatureTask } from "./featureTasks";
 import { InfringementFilterTaskModal } from "./InfringementFilterTaskModal";
 import { PatternExtractModal } from "./PatternExtractModal";
 import { ProductSetTaskModal } from "./ProductSetTaskModal";
+import { RecreateModal } from "./RecreateModal";
+import { SmartEditModal } from "./SmartEditModal";
+import { TaskResultComparisonPanel } from "./TaskResultComparisonPanel";
 import { VectorTaskModal } from "./VectorTaskModal";
 import { VideoTaskModal } from "./VideoTaskModal";
 import type { WorkflowTask } from "./workflowTasks";
@@ -160,66 +164,6 @@ function SelectableImageCard({
   );
 }
 
-function ProductSetStepContent({
-  result,
-  selectedIds,
-  onToggle,
-}: {
-  result: Extract<WorkflowStepResult, { kind: "product-set" }>;
-  selectedIds: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <div className="flex flex-col lg:flex-row gap-6 max-w-[1200px]">
-      <div className="shrink-0">
-        <div className="text-[13px] font-medium text-foreground mb-3">原图</div>
-        <SelectableImageCard
-          id="source"
-          url={result.sourceImageUrl}
-          label="原图"
-          selected={selectedIds.has("source")}
-          onToggle={onToggle}
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium text-foreground mb-3">生成图</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {result.generatedImages
-            .filter((g) => !g.discarded)
-            .map((img) => (
-              <SelectableImageCard
-                key={img.id}
-                id={img.id}
-                url={img.url}
-                selected={selectedIds.has(img.id)}
-                onToggle={onToggle}
-              />
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ImageStepContent({
-  result,
-  selectedIds,
-  onToggle,
-}: {
-  result: Extract<WorkflowStepResult, { kind: "image" }>;
-  selectedIds: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <SelectableImageCard
-      id="main"
-      url={result.imageUrl}
-      selected={selectedIds.has("main")}
-      onToggle={onToggle}
-    />
-  );
-}
-
 function TitleStepContent({
   result,
   onTitleChange,
@@ -291,6 +235,8 @@ export function WorkflowTaskDetailPage({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [featureModal, setFeatureModal] = useState<DesignFeatureId | null>(null);
   const [importAssets, setImportAssets] = useState<UploadedAsset[]>([]);
+  const [smartEditGeneratedId, setSmartEditGeneratedId] = useState<string | null>(null);
+  const [recreateGeneratedId, setRecreateGeneratedId] = useState<string | null>(null);
 
   const activeResult = stepResults[activeStepIndex];
   const selectable = useMemo(() => getSelectableImages(activeResult), [activeResult]);
@@ -320,6 +266,40 @@ export function WorkflowTaskDetailPage({
 
   const getSelectedUrls = () =>
     selectable.filter((s) => selectedIds.has(s.id)).map((s) => s.url);
+
+  const getGeneratedUrl = (id: string | null) => {
+    if (!id || !activeResult) return null;
+    if (activeResult.kind === "product-set") {
+      return activeResult.generatedImages.find((img) => img.id === id)?.url ?? null;
+    }
+    if (activeResult.kind === "image" && id === "main") {
+      return activeResult.imageUrl;
+    }
+    return null;
+  };
+
+  const updateGeneratedUrl = (id: string, url: string) => {
+    setStepResults((prev) =>
+      prev.map((result, index) => {
+        if (index !== activeStepIndex) return result;
+        if (result.kind === "product-set") {
+          return {
+            ...result,
+            generatedImages: result.generatedImages.map((img) =>
+              img.id === id ? { ...img, url } : img,
+            ),
+          };
+        }
+        if (result.kind === "image" && id === "main") {
+          return { ...result, imageUrl: url };
+        }
+        return result;
+      }),
+    );
+  };
+
+  const smartEditGeneratedUrl = getGeneratedUrl(smartEditGeneratedId);
+  const recreateGeneratedUrl = getGeneratedUrl(recreateGeneratedId);
 
   const openFeature = (featureId: DesignFeatureId) => {
     const urls = getSelectedUrls();
@@ -379,6 +359,13 @@ export function WorkflowTaskDetailPage({
     setSelectedIds(new Set());
   };
 
+  const handleDownload = () => {
+    const urls = getSelectedUrls();
+    if (urls.length === 0) return;
+    addDownloadRecord({ title: `工作流-批量下载-${task.batch}`, count: urls.length });
+    showDownloadStartedSuccess();
+  };
+
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-background relative">
       <StepProgressBar
@@ -397,6 +384,11 @@ export function WorkflowTaskDetailPage({
         </button>
         <button
           type="button"
+          onClick={() => {
+            const count = Math.max(1, selectable.length);
+            addDownloadRecord({ title: `工作流-全部下载-${task.batch}`, count });
+            showDownloadStartedSuccess();
+          }}
           className="h-8 px-3 rounded-md bg-primary text-white text-[12px] font-medium hover:bg-primary/90"
         >
           下载全部
@@ -472,10 +464,36 @@ export function WorkflowTaskDetailPage({
         className={`flex-1 overflow-auto px-8 py-8 scrollbar-none ${selectedCount > 0 ? "pb-28" : "pb-8"}`}
       >
         {activeResult?.kind === "product-set" ? (
-          <ProductSetStepContent
-            result={activeResult}
-            selectedIds={selectedIds}
-            onToggle={toggleSelect}
+          <TaskResultComparisonPanel
+            sourceUrl={activeResult.sourceImageUrl}
+            generated={activeResult.generatedImages.map((img, index) => ({
+              id: img.id,
+              url: img.url,
+              selected: selectedIds.has(img.id),
+              discarded: img.discarded,
+              label: `生成图 ${index + 1}`,
+            }))}
+            onToggleGenerated={toggleSelect}
+            onDiscardGenerated={(id) => {
+              setStepResults((prev) =>
+                prev.map((r, i) => {
+                  if (i !== activeStepIndex || r.kind !== "product-set") return r;
+                  return {
+                    ...r,
+                    generatedImages: r.generatedImages.map((img) =>
+                      img.id === id ? { ...img, discarded: true } : img,
+                    ),
+                  };
+                }),
+              );
+              setSelectedIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+              });
+            }}
+            onSmartEditGenerated={setSmartEditGeneratedId}
+            onRecreateGenerated={setRecreateGeneratedId}
           />
         ) : activeResult?.kind === "title" ? (
           <TitleStepContent
@@ -485,10 +503,19 @@ export function WorkflowTaskDetailPage({
             onToggle={toggleSelect}
           />
         ) : activeResult?.kind === "image" ? (
-          <ImageStepContent
-            result={activeResult}
-            selectedIds={selectedIds}
-            onToggle={toggleSelect}
+          <TaskResultComparisonPanel
+            sourceUrl={activeResult.sourceUrl}
+            generated={[
+              {
+                id: "main",
+                url: activeResult.imageUrl,
+                selected: selectedIds.has("main"),
+                label: "生成图 1",
+              },
+            ]}
+            onToggleGenerated={toggleSelect}
+            onSmartEditGenerated={setSmartEditGeneratedId}
+            onRecreateGenerated={setRecreateGeneratedId}
           />
         ) : (
           <p className="text-[13px] text-muted-foreground">暂无该步骤生成内容</p>
@@ -501,6 +528,7 @@ export function WorkflowTaskDetailPage({
         onSelectAll={handleSelectAll}
         onClearSelection={() => setSelectedIds(new Set())}
         onSaveToProductLibrary={handleSaveToProductLibrary}
+        onDownload={handleDownload}
         onDiscard={activeResult?.kind === "product-set" ? handleDiscard : undefined}
         onOpenFeature={openFeature}
       />
@@ -558,6 +586,24 @@ export function WorkflowTaskDetailPage({
         initialAssets={importAssets}
         onSubmit={handleFeatureSubmit}
       />
+      {smartEditGeneratedId && smartEditGeneratedUrl ? (
+        <SmartEditModal
+          open={Boolean(smartEditGeneratedId)}
+          imageUrl={smartEditGeneratedUrl}
+          onClose={() => setSmartEditGeneratedId(null)}
+          onSave={(editedUrl) => {
+            updateGeneratedUrl(smartEditGeneratedId, editedUrl);
+            setSmartEditGeneratedId(null);
+          }}
+        />
+      ) : null}
+      {recreateGeneratedId && recreateGeneratedUrl ? (
+        <RecreateModal
+          open={Boolean(recreateGeneratedId)}
+          imageUrl={recreateGeneratedUrl}
+          onClose={() => setRecreateGeneratedId(null)}
+        />
+      ) : null}
     </div>
   );
 }

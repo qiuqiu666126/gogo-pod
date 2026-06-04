@@ -5,6 +5,7 @@ import type { UploadedAsset } from "./api/uploadApi";
 import { assetsToSubmitInput, type SubmitFeatureTaskInput } from "./featureTasks";
 import { TaskMaterialUploadSection } from "./TaskMaterialUploadSection";
 import { DynamicFormFields } from "./components/DynamicFormFields";
+import { HoverImagePreview } from "./components/HoverImagePreview";
 import { useSceneFormState } from "./hooks/useSceneFormState";
 import type { FormControl, FormValue } from "../shared/sceneFormSchema";
 import { findProductSetTemplate } from "./productSetTemplateStore";
@@ -160,7 +161,7 @@ function Step1Content({
               <button
                 key={item.id}
                 onClick={() => toggleTemplate(item.id)}
-                className={`text-left rounded-xl border overflow-hidden transition-colors ${
+                className={`relative text-left rounded-xl border transition-colors ${
                   checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/35"
                 }`}
               >
@@ -174,13 +175,17 @@ function Step1Content({
                   />
                   <div className="flex flex-col gap-1 w-10 shrink-0 pt-5">
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="h-8 rounded border border-border/60 bg-muted overflow-hidden">
-                        <img src={item.img} alt="" className="w-full h-full object-cover opacity-80" />
+                      <div key={i} className="h-8 rounded border border-border/60 bg-muted">
+                        <HoverImagePreview
+                          src={item.img}
+                          alt={`${item.name}缩略图${i + 1}`}
+                          previewClassName="w-[360px] max-w-[min(360px,78vw)]"
+                        />
                       </div>
                     ))}
                   </div>
-                  <div className="flex-1 min-w-0 aspect-square rounded-lg border border-border/60 overflow-hidden bg-muted">
-                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                  <div className="flex-1 min-w-0 aspect-square rounded-lg border border-border/60 bg-muted">
+                    <HoverImagePreview src={item.img} alt={item.name} />
                   </div>
                 </div>
                 <div className="px-3 py-2.5 border-t border-border/60">

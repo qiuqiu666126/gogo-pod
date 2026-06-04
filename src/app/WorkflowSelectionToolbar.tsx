@@ -7,6 +7,7 @@ export function WorkflowSelectionToolbar({
   onSelectAll,
   onClearSelection,
   onSaveToProductLibrary,
+  onDownload,
   onDiscard,
   onRecover,
   onOpenFeature,
@@ -16,6 +17,7 @@ export function WorkflowSelectionToolbar({
   onSelectAll: (checked: boolean) => void;
   onClearSelection: () => void;
   onSaveToProductLibrary?: () => void;
+  onDownload?: () => void;
   onDiscard?: () => void;
   onRecover?: () => void;
   onOpenFeature: (featureId: DesignFeatureId) => void;
@@ -27,10 +29,9 @@ export function WorkflowSelectionToolbar({
       onSelectAll={onSelectAll}
       onClearSelection={onClearSelection}
       onSaveToProductLibrary={onSaveToProductLibrary}
-      onDownload={() => {}}
+      onDownload={onDownload}
       onDiscard={onDiscard}
       onRecover={onRecover}
-      onTag={() => {}}
       onOpenFeature={onOpenFeature}
     />
   );

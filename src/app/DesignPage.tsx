@@ -9,9 +9,15 @@ import { CrackImagePage } from "./CrackImagePage";
 import { InfringementFilterPage } from "./InfringementFilterPage";
 import { TextToImagePage } from "./TextToImagePage";
 import { TitleExtractPage } from "./TitleExtractPage";
+import {
+  isFavoriteFeature,
+  toggleFavoriteFeature,
+  useFavoriteFeatureIds,
+  type FavoriteFeatureId,
+} from "./favoriteFeatures";
 
 type DesignCard = {
-  id: string;
+  id: FavoriteFeatureId;
   title: string;
   desc: string;
   preview: ReactNode;
@@ -140,11 +146,13 @@ export function DesignPage({
   onOpenCrack,
   onOpenText2img,
   productSetEntryKey = 0,
+  featureEntry,
 }: {
   onOpenPattern?: () => void;
   onOpenCrack?: () => void;
   onOpenText2img?: () => void;
   productSetEntryKey?: number;
+  featureEntry?: { id: FavoriteFeatureId; key: number } | null;
 }) {
   const [showProductSet, setShowProductSet] = useState(false);
   const [showPatternExtract, setShowPatternExtract] = useState(false);
@@ -154,6 +162,7 @@ export function DesignPage({
   const [showInfringement, setShowInfringement] = useState(false);
   const [showTextToImage, setShowTextToImage] = useState(false);
   const [showTitleExtract, setShowTitleExtract] = useState(false);
+  const favoriteIds = useFavoriteFeatureIds();
 
   useEffect(() => {
     if (productSetEntryKey > 0) {
@@ -167,6 +176,18 @@ export function DesignPage({
       setShowTitleExtract(false);
     }
   }, [productSetEntryKey]);
+
+  useEffect(() => {
+    if (!featureEntry || featureEntry.key <= 0) return;
+    setShowProductSet(featureEntry.id === "product-set");
+    setShowPatternExtract(featureEntry.id === "pattern-extract");
+    setShowCutout(featureEntry.id === "cutout");
+    setShowVector(featureEntry.id === "vector");
+    setShowCrack(featureEntry.id === "crack");
+    setShowInfringement(featureEntry.id === "infringement");
+    setShowTextToImage(featureEntry.id === "text2img");
+    setShowTitleExtract(featureEntry.id === "title-extract");
+  }, [featureEntry]);
 
   if (showTitleExtract) {
     return <TitleExtractPage onBack={() => setShowTitleExtract(false)} />;
@@ -212,7 +233,7 @@ export function DesignPage({
           onClick: () => setShowCutout(true),
         },
         {
-          id: "extract",
+          id: "pattern-extract",
           title: "印花图提取",
           desc: "不惧模糊遮挡透视，独家支持多比例提取",
           preview: (
@@ -300,21 +321,36 @@ export function DesignPage({
             <h2 className="text-[14px] font-semibold text-foreground mb-4">{section.title}</h2>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {section.cards.map((card) => (
-                <button
+                <div
                   key={card.id}
-                  onClick={card.onClick}
-                  className="group flex items-stretch h-[136px] rounded-xl border border-border bg-card overflow-hidden text-left hover:border-primary/35 hover:shadow-md transition-all duration-200"
+                  className="group relative h-[136px] rounded-xl border border-border bg-card hover:border-primary/35 hover:shadow-md transition-all duration-200"
                 >
-                  <div className="flex-1 px-5 py-4 flex flex-col justify-center min-w-0">
-                    <div className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {card.title}
+                  <button
+                    type="button"
+                    onClick={card.onClick}
+                    className="flex h-full w-full items-stretch overflow-hidden rounded-xl text-left"
+                  >
+                    <div className="flex-1 px-5 py-4 flex flex-col justify-center min-w-0">
+                      <div className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {card.title}
+                      </div>
+                      <div className="mt-1.5 text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{card.desc}</div>
                     </div>
-                    <div className="mt-1.5 text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{card.desc}</div>
-                  </div>
-                  <div className="w-[min(42%,220px)] shrink-0 self-stretch p-2.5">
-                    <div className="h-full">{card.preview}</div>
-                  </div>
-                </button>
+                    <div className="w-[min(42%,220px)] shrink-0 self-stretch p-2.5">
+                      <div className="h-full">{card.preview}</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleFavoriteFeature(card.id);
+                    }}
+                    className="absolute right-3 top-3 rounded-md border border-primary/30 bg-white/95 px-2.5 py-1 text-[12px] font-medium text-primary opacity-0 shadow-sm transition-opacity hover:bg-primary hover:text-white group-hover:opacity-100"
+                  >
+                    {favoriteIds.includes(card.id) || isFavoriteFeature(card.id) ? "取消设置" : "设置为常用"}
+                  </button>
+                </div>
               ))}
             </div>
           </section>
