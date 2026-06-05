@@ -23,6 +23,9 @@ const DEMO_RESULT_IMAGE = new URL("../assets/task-demo/result-pattern.png", impo
 const DEMO_RESULT_VIDEO =
   "https://images.unsplash.com/photo-1529139574466-a303027c1d7b?w=640&h=480&fit=crop&auto=format";
 
+const DEMO_TITLE =
+  "White T-Shirt Super Mario Character Print Casual Wear for Men and Women Gaming Fans Streetwear Style";
+
 export type ExecuteTaskPayload = {
   type: FeatureTaskType;
   taskId: string;
@@ -74,8 +77,13 @@ export async function executeFeatureTask(payload: ExecuteTaskPayload): Promise<E
   const items: FeatureTaskResultItem[] = Array.from({ length: quantity }, (_, i) => ({
     id: `${payload.taskId}-item-${i}`,
     sourceUrl: sources[i] ?? sources[0] ?? DEMO_SOURCE,
-    resultUrl: mediaKind === "video" ? DEMO_RESULT_VIDEO : DEMO_RESULT_IMAGE,
-    mediaKind,
+    resultUrl:
+      payload.type === "title-extract"
+        ? DEMO_TITLE
+        : mediaKind === "video"
+          ? DEMO_RESULT_VIDEO
+          : DEMO_RESULT_IMAGE,
+    mediaKind: payload.type === "title-extract" ? "image" : mediaKind,
     discarded: false,
   }));
 

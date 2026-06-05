@@ -102,6 +102,155 @@ const recommendations = [
   { id: 4, title: "儿童节印花系列", desc: "卡通风格 · 批量定制", img: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&h=240&fit=crop&auto=format", videoUrl: "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1" },
 ];
 
+const recommendationVideoUrl = "//player.bilibili.com/player.html?bvid=BV1LbxheoEcM&autoplay=1";
+
+const recommendationGallery = [
+  {
+    id: 1,
+    title: "世界杯图案侵权扫描 防TRO封禁",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#7c2527] to-[#fff5f5] text-white",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 2,
+    title: "2D印花秒变3D效果 Etsy爆款月入10w+",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#d7e9fb] to-[#f9fcff] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 3,
+    title: "单图变系列印花 母亲节马克杯批量生成",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#ffd8e8] to-[#fff6fb] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 4,
+    title: "母亲节亲子款T恤 全自动批量设计生产",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#ffd6d3] to-[#fff8f2] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 5,
+    title: "母亲节爆款印花 智能自动批量设计生成",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1525498128493-380d1990a112?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#ffc5ee] to-[#fff6fb] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 6,
+    title: "复活节爆款印花 批量极速自动创作衍生",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1521967906867-14ec9d64bee8?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#bfeaf0] to-[#f6ffff] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 7,
+    title: "复活节爆款马克杯 从设计到上架全自动",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#e7b4ae] to-[#fff3df] text-[#8a1414]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 8,
+    title: "跨境爆款装饰画 极速全自动生成千款",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#b8e0d4] to-[#f4fffb] text-zinc-950",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 9,
+    title: "跨境TK带货！ 秒生成海外爆款视频",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1521334884684-d80222895322?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#f0f58e] to-[#fff8b8] text-[#777000]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 10,
+    title: "杯垫商品图快速出 多品类复用",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1572041176609-75b5902284f5?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#ffd68a] to-[#fff4df] text-[#a94b00]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 11,
+    title: "情侣手机壳 CP款设计直出",
+    tag: "周周POD",
+    img: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#b9b9b9] to-[#eeeeee] text-zinc-900",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 12,
+    title: "车库门旗帜铺货 全流程出图",
+    tag: "灵图POD",
+    img: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#d9b8ff] to-[#f5eaff] text-[#5412a5]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 13,
+    title: "合照生成 零散照变同框大片",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#f8c081] to-[#fff0d7] text-[#9a3f00]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 14,
+    title: "AI模特试衣！ 出图省成本",
+    tag: "AI图POD",
+    img: "https://images.unsplash.com/photo-1529139574466-a303027c1d7b?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#8ce8d7] to-[#e8fff9] text-[#0f5b52]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 15,
+    title: "局部改图 秒换元素/花色",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#ffd8d8] to-[#fff5f5] text-[#b52430]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 16,
+    title: "四方连续一键生 全品类适配",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#99d8ff] to-[#e7f7ff] text-[#0b5f78]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 17,
+    title: "1分钟教程 DIY亚克力",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#74f7f0] to-[#dffffc] text-[#075c58]",
+    videoUrl: recommendationVideoUrl,
+  },
+  {
+    id: 18,
+    title: "手机壳视频 引流神器！",
+    tag: "美图POD",
+    img: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?w=360&h=220&fit=crop&auto=format",
+    className: "from-[#c8b2ff] to-[#f2eaff] text-[#4b238f]",
+    videoUrl: recommendationVideoUrl,
+  },
+];
+
 // ─── Small helpers ────────────────────────────────────────────────────────────
 function StatusIcon({ status }: { status: string }) {
   if (status === "completed") return <CheckCircle2 size={15} className="text-emerald-400" />;
@@ -119,6 +268,59 @@ function toRecentTaskStatus(status: string) {
   if (status === "已完成") return "completed";
   if (status === "运行中") return "running";
   return "failed";
+}
+
+function RecommendationGalleryPage({
+  onBack,
+  onPlayVideo,
+}: {
+  onBack: () => void;
+  onPlayVideo: (url: string) => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="返回首页"
+        >
+          <ArrowLeft size={16} />
+        </button>
+        <div>
+          <h1 className="text-[18px] font-semibold text-foreground">POD玩法精选</h1>
+          <div className="mt-1 h-[3px] w-[118px] rounded-full bg-primary" />
+        </div>
+      </div>
+
+      <main className="flex-1 overflow-y-auto px-6 py-5 scrollbar-none">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {recommendationGallery.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onPlayVideo(item.videoUrl)}
+              className={`group relative h-[178px] overflow-hidden rounded-lg border border-border/80 bg-gradient-to-br ${item.className} p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
+            >
+              <div className="text-[10px] font-medium opacity-60">{item.tag}</div>
+              <div className="relative z-10 mt-8 max-w-[56%] text-[15px] font-semibold leading-6">
+                {item.title}
+              </div>
+              <div className="absolute right-3 top-4 h-[138px] w-[138px] overflow-hidden rounded-lg border-2 border-white/80 bg-white shadow-lg">
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/5" />
+            </button>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
 }
 
 // ─── Workflow Modal ───────────────────────────────────────────────────────────
@@ -325,6 +527,7 @@ function WorkflowModal({
 export default function App() {
   const session = useFrontendSession();
   const [activeNav, setActiveNav] = useState("workflow");
+  const [recommendationGalleryOpen, setRecommendationGalleryOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [showBuilderPage, setShowBuilderPage] = useState(false);
@@ -370,6 +573,7 @@ export default function App() {
   useEffect(() => {
     return registerNavigateToWorkflowList(() => {
       setActiveNav("workflow");
+      setRecommendationGalleryOpen(false);
       setWorkflowListOpen(true);
       setWorkflowView("list");
     });
@@ -495,6 +699,7 @@ export default function App() {
                 onClick={() => {
                   setActiveNav(item.id);
                   if (item.id === "workflow") {
+                    setRecommendationGalleryOpen(false);
                     setWorkflowListOpen(false);
                   }
                 }}
@@ -574,6 +779,14 @@ export default function App() {
               setActiveNav("design");
             }}
           />
+        ) : activeNav === "workflow" && recommendationGalleryOpen ? (
+          <RecommendationGalleryPage
+            onBack={() => setRecommendationGalleryOpen(false)}
+            onPlayVideo={(url) => {
+              setPlayVideoUrl(url);
+              setPlayVideoModalOpen(true);
+            }}
+          />
         ) : activeNav === "workflow" && workflowListOpen ? (
           workflowView === "templates" ? (
             <WorkflowTemplatesPage
@@ -628,10 +841,11 @@ export default function App() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
             </button>
             <button
-              onClick={() => {
-                setWorkflowListOpen(true);
-                openCreateWorkflowModal();
-              }}
+            onClick={() => {
+              setWorkflowListOpen(true);
+              setRecommendationGalleryOpen(false);
+              openCreateWorkflowModal();
+            }}
               className="flex items-center gap-2 h-8 pl-2 pr-3 rounded-lg bg-primary hover:bg-primary/90 transition-all text-[12px] font-medium text-white shadow-[0_0_16px_rgba(242,100,25,0.25)]"
             >
               <Plus size={13} />
@@ -661,7 +875,10 @@ export default function App() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Blank workflow card */}
               <button
-                onClick={() => setWorkflowListOpen(true)}
+                onClick={() => {
+                  setRecommendationGalleryOpen(false);
+                  setWorkflowListOpen(true);
+                }}
                 className={`group relative flex h-[156px] flex-col items-start gap-3 p-4 rounded-xl border bg-gradient-to-br ${quickStartBlank.gradient} ${quickStartBlank.borderColor} ${quickStartBlank.hoverGlow} hover:shadow-lg transition-all duration-200 text-left`}
               >
                 <div className="p-2 rounded-lg bg-muted/80">{quickStartBlank.icon}</div>
@@ -754,7 +971,11 @@ export default function App() {
           <section className="pb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[14px] font-semibold text-foreground">推荐玩法 / 案例</h2>
-              <button className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-primary transition-colors">
+              <button
+                type="button"
+                onClick={() => setRecommendationGalleryOpen(true)}
+                className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-primary transition-colors"
+              >
                 查看更多 <ChevronRight size={13} />
               </button>
             </div>

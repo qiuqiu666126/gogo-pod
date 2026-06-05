@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
+  Check,
+  Copy,
+  Edit3,
   RefreshCw,
 } from "lucide-react";
 import {
@@ -48,6 +51,216 @@ function StatusBadge({ status }: { status: FeatureTask["status"] }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${cls}`}>
       {status}
     </span>
+  );
+}
+
+function TitleExtractResultCard({
+  item,
+  selected,
+  onToggle,
+  onTitleConfirm,
+}: {
+  item: FeatureTaskResultItem;
+  selected: boolean;
+  onToggle: (id: string) => void;
+  onTitleConfirm: (id: string, title: string) => void;
+}) {
+  const fallbackTitle =
+    "White T-Shirt Super Mario Character Print Casual Wear for Men and Women Gaming Fans Streetwear Style";
+  const displayTitle = /^https?:\/\//.test(item.resultUrl) || item.resultUrl.startsWith("data:image/")
+    ? fallbackTitle
+    : item.resultUrl;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(displayTitle);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayTitle);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      showTaskActionSuccess("标题已复制");
+    } catch {
+      showTaskError("复制失败，请手动复制");
+    }
+  };
+
+  const handleDownloadSource = () => {
+    addDownloadRecord({ title: "标题提取-原图下载", count: 1 });
+    showDownloadStartedSuccess();
+    const a = document.createElement("a");
+    a.href = item.sourceUrl;
+    a.download = "";
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    a.click();
+  };
+
+  const handleEdit = () => {
+    setDraft(displayTitle);
+    setEditing(true);
+  };
+
+  const handleCancel = () => {
+    setDraft(displayTitle);
+    setEditing(false);
+  };
+
+  const handleConfirm = () => {
+    const next = draft.trim();
+    if (!next) {
+      showTaskError("标题不能为空");
+      return;
+    }
+    onTitleConfirm(item.id, next);
+    setEditing(false);
+    showTaskActionSuccess("标题已更新");
+  };
+
+  return (
+    <div className="w-[328px] overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="relative h-[244px] bg-muted">
+        <img src={item.sourceUrl} alt="原图" className="h-full w-full object-cover" />
+        <button
+          type="button"
+          onClick={() => onToggle(item.id)}
+          className={`absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded border ${
+            selected ? "border-primary bg-primary text-white" : "border-white/70 bg-black/35"
+          }`}
+          aria-label="选择标题结果"
+        >
+          {selected ? <Check size={12} /> : null}
+        </button>
+      </div>
+
+      <div className="relative min-h-[100px] border-t border-border px-3 py-3">
+        {editing ? (
+          <div className="rounded-md border border-primary bg-background p-3 shadow-sm">
+            <textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={4}
+              autoFocus
+              className="w-full resize-none bg-transparent text-[12px] leading-5 text-foreground outline-none"
+            />
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="h-8 rounded-md border border-border px-3 text-[12px] text-foreground hover:bg-muted/50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                className="h-8 rounded-md bg-primary px-3 text-[12px] font-medium text-white hover:bg-primary/90"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-[12px] font-medium leading-5 text-foreground">{displayTitle}</p>
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="编辑标题"
+            >
+              <Edit3 size={15} />
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 border-t border-border">
+        <button
+          type="button"
+          onClick={handleDownloadSource}
+          className="h-10 border-r border-border text-[12px] font-medium text-foreground hover:bg-muted/40"
+        >
+          下载原图
+        </button>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="h-10 text-[12px] font-medium text-foreground hover:bg-muted/40"
+        >
+          <Copy size={13} className="mr-1 inline -mt-0.5" />
+          {copied ? "已复制" : "复制标题"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function formatDetectionTime(createdAt: string) {
+  const normalized = createdAt.replace(/-/g, "/");
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return createdAt;
+  const p = (value: number) => String(value).padStart(2, "0");
+  return `${parsed.getFullYear()}/${p(parsed.getMonth() + 1)}/${p(parsed.getDate())}\n${p(parsed.getHours())}:${p(parsed.getMinutes())}`;
+}
+
+function InfringementReportTable({
+  items,
+  task,
+}: {
+  items: FeatureTaskResultItem[];
+  task: FeatureTask;
+}) {
+  const detectionTime = formatDetectionTime(task.createdAt);
+  const description =
+    "图片中显著使用了任天堂（Nintendo）旗下经典IP角色马里奥（Mario）的完整形象（红帽、蓝工装裤、标志性姿态），并搭配“SUPER MARIO”文字及复古条纹背景，构成对《超级马里奥》系列商标与著作权的直接复制与商业性使用。该设计未获授权，高度符合典型侵权特征，属于明确侵犯任天堂知识产权的行为。";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-sm">
+      <div className="grid min-w-[1120px] grid-cols-[180px_124px_138px_minmax(520px,1fr)_110px] border-b border-border bg-muted/30 px-4 py-4 text-[14px] font-semibold text-foreground">
+        <div>产品图</div>
+        <div>检测结果</div>
+        <div>疑似侵权对象</div>
+        <div>说明</div>
+        <div className="text-right">检测时间</div>
+      </div>
+
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className="grid min-w-[1120px] grid-cols-[180px_124px_138px_minmax(520px,1fr)_110px] items-center gap-0 border-b border-border px-4 py-5 last:border-b-0"
+        >
+          <div>
+            <div className="h-[148px] w-[148px] overflow-hidden rounded-md border border-border bg-muted">
+              <img src={item.sourceUrl} alt="产品图" className="h-full w-full object-cover" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <span className="inline-flex rounded-full bg-red-50 px-3 py-1 text-[13px] font-medium text-red-600">
+              高风险
+            </span>
+            <span className="block w-fit rounded-full bg-slate-100 px-3 py-1 text-[13px] text-slate-600">
+              可信度 99%
+            </span>
+          </div>
+
+          <div className="text-[14px] font-semibold leading-6 text-foreground">
+            Nintendo、
+            <br />
+            Super Mario
+          </div>
+
+          <div className="pr-8 text-[14px] font-semibold leading-7 text-slate-700">
+            {description}
+          </div>
+
+          <div className="whitespace-pre-line text-right text-[14px] leading-6 text-muted-foreground">
+            {detectionTime}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -288,7 +501,25 @@ export function FeatureTaskDetailPage({
           <div className="text-center py-24 text-muted-foreground text-[13px]">所有结果均已废弃</div>
         )}
 
-        {task.status === "已完成" && (
+        {task.status === "已完成" && taskType === "title-extract" && (
+          <div className="flex flex-wrap gap-4">
+            {activeItems.map((item) => (
+              <TitleExtractResultCard
+                key={item.id}
+                item={item}
+                selected={selectedIds.has(item.id)}
+                onToggle={toggleSelect}
+                onTitleConfirm={(id, title) => updateFeatureTaskItemResult(taskType, task.id, id, title)}
+              />
+            ))}
+          </div>
+        )}
+
+        {task.status === "已完成" && taskType === "infringement" && (
+          <InfringementReportTable items={activeItems} task={task} />
+        )}
+
+        {task.status === "已完成" && taskType !== "title-extract" && taskType !== "infringement" && (
           <TaskResultComparisonPanel
             sourceUrl={sourceUrl}
             generated={task.items.map((item, index) => ({
@@ -307,17 +538,19 @@ export function FeatureTaskDetailPage({
         )}
       </div>
 
-      <TaskDetailBatchBar
-        selectedCount={selectedCount}
-        totalSelectable={selectableItems.length}
-        onSelectAll={handleSelectAll}
-        onClearSelection={() => setSelectedIds(new Set())}
-        onSaveToProductLibrary={handleSaveToProductLibrary}
-        onDownload={handleDownload}
-        onDiscard={handleBatchDiscard}
-        onRecover={handleBatchRecover}
-        onOpenFeature={openFeature}
-      />
+      {taskType !== "title-extract" && taskType !== "infringement" ? (
+        <TaskDetailBatchBar
+          selectedCount={selectedCount}
+          totalSelectable={selectableItems.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={() => setSelectedIds(new Set())}
+          onSaveToProductLibrary={handleSaveToProductLibrary}
+          onDownload={handleDownload}
+          onDiscard={handleBatchDiscard}
+          onRecover={handleBatchRecover}
+          onOpenFeature={openFeature}
+        />
+      ) : null}
 
       {smartEditItem && smartEditItem.mediaKind === "image" && (
         <SmartEditModal

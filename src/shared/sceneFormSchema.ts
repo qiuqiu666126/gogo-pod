@@ -34,6 +34,12 @@ export type FormControlOption = {
   thumbnailUrl?: string;
   previewText?: string;
   previewDescription?: string;
+  examplePreview?: {
+    beforeUrl: string;
+    afterUrl: string;
+    label: string;
+    badge?: string;
+  };
   subFields?: FormControl[];
 };
 
@@ -50,6 +56,7 @@ export type FormControl = {
   sortOrder: number;
   enabled: boolean;
   placeholder?: string;
+  examplePreview?: FormControlOption["examplePreview"];
   options?: FormControlOption[];
   slider?: {
     min: number;
@@ -461,6 +468,13 @@ export function buildPatternExtractFormFields(): FormControl[] {
 }
 
 export function buildCutoutFormFields(): FormControl[] {
+  const backgroundExample = {
+    beforeUrl: "cutout-child-demo",
+    afterUrl: "cutout-child-demo",
+    label: "去背景",
+    badge: "抠图",
+  };
+
   return [
     createControl({
       key: "cutoutMode",
@@ -468,8 +482,14 @@ export function buildCutoutFormFields(): FormControl[] {
       type: "radio",
       layout: "inline",
       defaultValue: "background",
+      examplePreview: backgroundExample,
       options: [
-        { value: "background", label: "去背景", promptFragment: "抠图模式：去背景" },
+        {
+          value: "background",
+          label: "去背景",
+          promptFragment: "抠图模式：去背景",
+          examplePreview: backgroundExample,
+        },
         { value: "head", label: "抠头", promptFragment: "抠图模式：抠头" },
       ],
       sortOrder: 0,
@@ -542,10 +562,22 @@ export function buildInfringementFormFields(): FormControl[] {
       label: "模式选择",
       type: "radio",
       layout: "block",
+      uiVariant: "card",
       defaultValue: "deep",
       options: [
-        { value: "deep", label: "深度过滤", promptFragment: "模式：深度过滤" },
-        { value: "basic", label: "基础过滤", promptFragment: "模式：基础过滤" },
+        {
+          value: "deep",
+          label: "深度过滤",
+          previewDescription:
+            "在基础过滤能力之上，结合TRO案件与艺术家版权数据库，联动全网深度检索，生成证据链式关联分析报告，为侵权判定提供可靠支撑",
+          promptFragment: "模式：深度过滤",
+        },
+        {
+          value: "basic",
+          label: "基础过滤",
+          previewDescription: "智能识别印花元素，快速比对知名商标与热门IP",
+          promptFragment: "模式：基础过滤",
+        },
       ],
       sortOrder: 0,
     }),
@@ -1187,10 +1219,50 @@ function normalizeControl(control: FormControl): FormControl {
   };
 }
 
-function normalizePreset(preset: SceneFormPreset): SceneFormPreset {
+function upgradeCutoutControl(control: FormControl): FormControl {
+  if (control.key !== "cutoutMode") return control;
+  const backgroundExample = buildCutoutFormFields().find((field) => field.key === "cutoutMode")?.examplePreview;
   return {
+    ...control,
+    examplePreview: control.examplePreview ?? backgroundExample,
+    options: control.options?.map((option) =>
+      option.value === "background"
+        ? { ...option, examplePreview: option.examplePreview ?? backgroundExample }
+        : option,
+    ),
+  };
+}
+
+function upgradeInfringementControl(control: FormControl): FormControl {
+  if (control.key !== "mode") return control;
+  const defaultField = buildInfringementFormFields().find((field) => field.key === "mode");
+  return {
+    ...control,
+    layout: "block",
+    uiVariant: "card",
+    options: (defaultField?.options ?? control.options)?.map((option) => ({ ...option })),
+  };
+}
+
+function normalizePreset(preset: SceneFormPreset): SceneFormPreset {
+  const base = {
     ...preset,
     formFields: preset.formFields.map(normalizeControl),
+  };
+  if (base.featureType === "cutout") {
+    return {
+      ...base,
+      formFields: base.formFields.map(upgradeCutoutControl),
+    };
+  }
+  if (base.featureType === "infringement") {
+    return {
+      ...base,
+      formFields: base.formFields.map(upgradeInfringementControl),
+    };
+  }
+  return {
+    ...base,
   };
 }
 
@@ -1244,13 +1316,14 @@ export function getSceneFormPreset(
   featureType: SceneFeatureType,
   sceneKey: string,
 ): SceneFormPreset | undefined {
-  return presets.find(
+  const preset = presets.find(
     (p) =>
       p.presetKind === "scene-form" &&
       p.featureType === featureType &&
       p.sceneKey === sceneKey &&
       p.enabled,
   );
+  return preset ? normalizePreset(preset) : undefined;
 }
 
 export function upsertScenePreset(preset: SceneFormPreset) {
