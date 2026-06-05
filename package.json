@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "deploy": "npm run build && wrangler pages project list 2>/dev/null | grep -q gogo-pod || wrangler pages project create gogo-pod --production-branch main && wrangler pages deploy dist --project-name=gogo-pod --commit-dirty=true",
-    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=gogo-pod --commit-dirty=true --branch=preview",
+    "deploy": "npm run build && wrangler pages project list 2>/dev/null | grep -q gogo-pod || wrangler pages project create gogo-pod --production-branch main && wrangler pages deploy dist --project-name=gogo-pod --branch=main --commit-dirty=true",
+    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=gogo-pod --commit-dirty=true --branch=dev",
     "dev": "vite --open /",
     "dev:admin": "vite --open /admin.html",
     "preview": "vite preview --open",
